@@ -1,0 +1,231 @@
+from crewai import Task
+from agents import BlogAgents
+
+class BlogTasks:
+    """Define all tasks for the blog generation workflow"""
+    
+    def __init__(self):
+        self.agents = BlogAgents()
+    
+    def research_task(self, topic: str):
+        return Task(
+            description=f"""Conduct comprehensive research on the topic: "{topic}"
+            
+            Your research should include:
+            1. Current state and overview of the topic
+            2. Key concepts, technologies, and terminology
+            3. Recent developments and trends (within the last year)
+            4. Best practices and industry standards
+            5. Common challenges and solutions
+            6. Real-world applications and use cases
+            7. Future outlook and emerging trends
+            
+            Use multiple search queries to gather diverse perspectives and ensure comprehensive coverage.
+            Focus on authoritative sources like official documentation, reputable tech blogs, research papers, and industry publications.
+            
+            Compile your findings into a structured research report that will serve as the foundation for creating a 2500-word technical article.""",
+            agent=self.agents.research_agent(),
+            expected_output="A comprehensive research report with key findings, sources, and structured information ready for content creation"
+        )
+    
+    def content_creation_task(self, topic: str):
+        return Task(
+            description=f"""Create a comprehensive 2500-word technical article on "{topic}" using the research provided.
+            
+            Structure the article as follows:
+            1. **Introduction** (300-400 words)
+               - Hook the reader with an engaging opening
+               - Provide context and background
+               - Clearly state what the article will cover
+               - Explain why this topic is important/relevant
+            
+            2. **Section 1** (500-600 words)
+               - Cover the foundational concepts
+               - Explain key terminology and basic principles
+               - Provide necessary background information
+            
+            3. **Section 2** (500-600 words)
+               - Dive deeper into technical details
+               - Discuss implementation approaches or methodologies
+               - Include practical examples where appropriate
+            
+            4. **Section 3** (500-600 words)
+               - Explore advanced concepts or applications
+               - Discuss best practices and common pitfalls
+               - Share real-world use cases or case studies
+            
+            5. **Section 4** (400-500 words)
+               - Cover future trends and developments
+               - Discuss challenges and opportunities
+               - Provide actionable insights for readers
+            
+            6. **Conclusion** (200-300 words)
+               - Summarize key takeaways
+               - Reinforce the importance of the topic
+               - Provide next steps or recommendations for readers
+            
+            Writing Guidelines:
+            - Write for a technical audience with intermediate to advanced knowledge
+            - Use clear, engaging language that maintains technical accuracy
+            - Include specific examples, code snippets, or technical details where relevant
+            - Ensure smooth transitions between sections
+            - Maintain consistent tone and style throughout
+            - Target approximately 2500 words total""",
+            agent=self.agents.content_writer_agent(),
+            expected_output="A well-structured 2500-word technical article with introduction, four main sections, and conclusion"
+        )
+    
+    def seo_optimization_task(self, topic: str):
+        return Task(
+            description=f"""Optimize the technical article for SEO while maintaining its technical accuracy and readability.
+            
+            Your optimization should include:
+            
+            1. **Keyword Strategy**
+               - Identify primary keyword from the topic: "{topic}"
+               - Find 3-5 related secondary keywords
+               - Ensure 1.5-2% keyword density throughout the content
+               - Place keywords naturally in headings and content
+            
+            2. **Title Optimization**
+               - Create an SEO-friendly title (50-60 characters)
+               - Include the primary keyword
+               - Make it compelling and click-worthy
+            
+            3. **Meta Description**
+               - Write a compelling meta description (150-160 characters)
+               - Include primary keyword
+               - Summarize the article's value proposition
+            
+            4. **Header Structure**
+               - Ensure proper H1, H2, H3 hierarchy
+               - Include keywords in headers naturally
+               - Make headers descriptive and scannable
+            
+            5. **Content Optimization**
+               - Add keyword variations throughout the content
+               - Optimize for semantic search and related terms
+               - Ensure content answers common questions about the topic
+               - Add internal linking opportunities (mark with [INTERNAL_LINK] placeholder)
+            
+            6. **Technical SEO**
+               - Ensure content is structured for featured snippets
+               - Optimize for voice search queries
+               - Include FAQ-style sections where appropriate
+            
+            Provide the optimized content along with SEO analysis and recommendations.""",
+            agent=self.agents.seo_optimizer_agent(),
+            expected_output="SEO-optimized article with title, meta description, proper header structure, and keyword optimization analysis"
+        )
+    
+    def html_formatting_task(self):
+        return Task(
+            description="""Convert the SEO-optimized content into clean, semantic HTML suitable for Ghost CMS publication.
+            
+            HTML Requirements:
+            1. **Structure**
+               - Use proper semantic HTML5 elements
+               - Implement correct heading hierarchy (H1, H2, H3)
+               - Use appropriate tags for different content types
+            
+            2. **Ghost CMS Compatibility**
+               - Format content for Ghost CMS editor
+               - Use Ghost-compatible HTML structure
+               - Ensure proper paragraph and section formatting
+            
+            3. **Technical Content Formatting**
+               - Format code blocks with proper syntax highlighting hints
+               - Use appropriate tags for technical terms and concepts
+               - Ensure lists and tables are properly structured
+            
+            4. **SEO Elements**
+               - Include meta title and description
+               - Ensure proper header structure is maintained
+               - Add schema markup hints where appropriate
+            
+            5. **Accessibility**
+               - Include alt text placeholders for images
+               - Ensure proper semantic structure
+               - Use descriptive link text
+            
+            The output should be clean, well-formatted HTML that can be directly imported into Ghost CMS.""",
+            agent=self.agents.html_formatter_agent(),
+            expected_output="Clean, semantic HTML formatted for Ghost CMS with proper structure and SEO elements"
+        )
+    
+    def quality_review_task(self, topic: str):
+        return Task(
+            description=f"""Conduct a comprehensive quality review of the technical article on "{topic}" before publication.
+            
+            Review Criteria:
+            
+            1. **Content Quality**
+               - Verify technical accuracy and factual correctness
+               - Check for logical flow and coherent structure
+               - Ensure all sections contribute to the overall narrative
+               - Validate that the content meets the 2500-word target
+            
+            2. **Technical Writing Standards**
+               - Assess clarity and readability for the target audience
+               - Check for consistent terminology and style
+               - Verify that complex concepts are explained clearly
+               - Ensure examples and use cases are relevant and helpful
+            
+            3. **SEO Effectiveness**
+               - Verify keyword optimization is natural and effective
+               - Check title and meta description quality
+               - Ensure header structure supports SEO goals
+               - Validate that content answers target search queries
+            
+            4. **HTML and Formatting**
+               - Check HTML structure and semantic correctness
+               - Verify Ghost CMS compatibility
+               - Ensure proper formatting of technical elements
+               - Validate accessibility considerations
+            
+            5. **Publication Readiness**
+               - Confirm all sections are complete and polished
+               - Check for any placeholder content or missing elements
+               - Ensure content is ready for user review and approval
+            
+            Provide detailed feedback and recommendations for any improvements needed.""",
+            agent=self.agents.quality_reviewer_agent(),
+            expected_output="Comprehensive quality review report with approval status and any recommended improvements"
+        )
+    
+    def ghost_publication_task(self, topic: str):
+        return Task(
+            description=f"""Prepare the technical article on "{topic}" for Ghost CMS publication as a draft.
+            
+            Publication Preparation:
+            
+            1. **Content Finalization**
+               - Ensure HTML is Ghost CMS ready
+               - Verify all formatting is correct
+               - Check that meta information is complete
+            
+            2. **Metadata Setup**
+               - Set appropriate tags for the technical topic
+               - Configure author information
+               - Set publication status to "draft"
+               - Add relevant categories or collections
+            
+            3. **Draft Creation**
+               - Prepare the content for Ghost CMS import
+               - Generate the publication payload
+               - Create draft ready for user review
+            
+            4. **User Review Preparation**
+               - Compile final content for user approval
+               - Provide summary of what was created
+               - Include instructions for review and publication
+            
+            5. **Publication Instructions**
+               - Provide clear next steps for the user
+               - Include any manual steps needed in Ghost CMS
+               - Offer guidance on final publication process
+            
+            Note: The content will be prepared as a draft and will require user approval before final publication.""",
+            agent=self.agents.ghost_publisher_agent(),
+            expected_output="Ghost CMS draft preparation with content ready for user review and approval before publication"
+        )
