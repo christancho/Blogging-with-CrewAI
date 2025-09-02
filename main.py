@@ -18,7 +18,7 @@ from tasks import BlogTasks
 class RateLimitHandler:
     """Handles OpenAI rate limits by automatically waiting when needed"""
     
-    def __init__(self, max_tpm=10000):
+    def __init__(self, max_tpm=200000):
         self.max_tpm = max_tpm
         self.last_wait_time = 0
     
@@ -105,7 +105,7 @@ class BlogGenerationCrew:
             self.agents = BlogAgents()
             self.tasks = BlogTasks()
             self.output_dir = Config.OUTPUT_DIR
-            self.rate_limit_handler = RateLimitHandler(max_tpm=10000)
+            self.rate_limit_handler = RateLimitHandler(max_tpm=200000)
             self.progress_tracker = ProgressTracker()
             self._ensure_output_directory()
         except ValueError as e:
@@ -212,7 +212,7 @@ class BlogGenerationCrew:
             print(f"\n🚀 Starting blog generation workflow...")
             print(f"📊 Total steps: {self.progress_tracker.total_steps}")
             print(f"⏱️  Estimated time: 15-30 minutes")
-            print("💡 Rate limit protection enabled: Will automatically wait if TPM exceeds 10,000\n")
+            print("💡 Rate limit protection enabled: Will automatically wait if TPM exceeds 200,000\n")
             
             # Define the crew tasks
             research_task = self.tasks.research_task(topic)

@@ -72,7 +72,7 @@ python main.py --topic "How to start a successful blog"
 
 ## 💡 Important: TPM Limits & Model Recommendation
 
-**⚠️ Due to OpenAI's TPM (Tokens Per Minute) limits, we strongly recommend using GPT-4o-mini instead of GPT-4:**
+**⚠️ For optimal performance, we recommend using GPT-4o-mini instead of GPT-4:**
 
 ```env
 # Add this to your .env file for better performance
@@ -80,10 +80,10 @@ OPENAI_MODEL_NAME=gpt-4o-mini
 ```
 
 **Why GPT-4o-mini?**
-- ✅ Higher TPM limits (much faster processing)
+- ✅ Faster processing and response times
 - ✅ Lower cost per token
 - ✅ Still produces excellent quality content
-- ✅ Less likely to hit rate limits
+- ✅ Better performance for long-form content generation
 
 ## 📝 How It Works
 
@@ -200,8 +200,9 @@ OPENAI_TEMPERATURE=0.7
 - Check that all required keys are set: `OPENAI_API_KEY`, `BRAVE_SEARCH_API_KEY`, `GHOST_API_KEY`, `GHOST_API_URL`
 
 **"Rate limit exceeded"**
-- Switch to `gpt-4o-mini` model (see recommendation above)
-- Wait a few minutes and try again
+- The system now has a very high TPM limit (200,000) to reduce rate limiting
+- Switch to `gpt-4o-mini` model for even better performance
+- Wait a few minutes and try again if needed
 - Check your OpenAI billing status
 
 **"Search failed with status code: 401"**
