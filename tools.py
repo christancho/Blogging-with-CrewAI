@@ -13,23 +13,44 @@ class BraveSearchTool(BaseTool):
     def _run(self, query: str, count: int = 10) -> str:
         """Execute a search query using Brave Search API"""
         try:
+            import json
+            import re
+            
+            # Debug: Log the input
+            print(f"🔍 Brave Search Input: {str(query)[:200]}...")
+            
             # Handle complex input that might include previous results
             if isinstance(query, str) and query.startswith('['):
                 try:
                     # Try to parse as JSON and extract the actual query
-                    import json
                     parsed = json.loads(query)
                     if isinstance(parsed, list) and len(parsed) > 0:
                         if isinstance(parsed[0], dict) and 'query' in parsed[0]:
                             query = parsed[0]['query']
                         else:
                             query = str(parsed[0])
-                except:
-                    # If parsing fails, use the original query
+                except json.JSONDecodeError:
+                    # If JSON parsing fails, try to extract query from string using regex
+                    query_match = re.search(r'"query":\s*"([^"]+)"', query)
+                    if query_match:
+                        query = query_match.group(1)
+                    else:
+                        # Try to extract the first quoted string as query
+                        first_quote = re.search(r'"([^"]+)"', query)
+                        if first_quote:
+                            query = first_quote.group(1)
+                except Exception as e:
+                    print(f"⚠️ JSON parsing error: {e}")
+                    # If all parsing fails, use the original query
                     pass
             
             # Clean the query string
             query = str(query).strip()
+            
+            # Remove any remaining JSON artifacts
+            query = re.sub(r'^["\']|["\']$', '', query)
+            
+            print(f"🔍 Extracted Query: {query}")
             
             # Validate query
             if not query or len(query) < 3:
