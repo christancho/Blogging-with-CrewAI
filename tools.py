@@ -314,6 +314,7 @@ class GhostCMSTool(BaseTool):
             # Debug information
             print(f"🔗 Ghost CMS API URL: {api_url}")
             print(f"🔑 Using API Key: {Config.GHOST_API_KEY[:10]}...")
+            print(f"🔗 Base URL from config: {Config.GHOST_API_URL}")
             
             response = requests.post(
                 api_url,
@@ -323,6 +324,7 @@ class GhostCMSTool(BaseTool):
             )
             
             print(f"📡 Ghost CMS Response Status: {response.status_code}")
+            print(f"📡 Ghost CMS Response Text: {response.text[:500]}...")
             
             if response.status_code == 201:
                 post_response = response.json()
@@ -337,6 +339,8 @@ class GhostCMSTool(BaseTool):
                     "draft_url": f"{Config.GHOST_API_URL.replace('/ghost', '')}/ghost/#/editor/post/{created_post.get('id')}"
                 }
                 print(f"✅ Ghost CMS post created successfully: {created_post.get('title')}")
+                print(f"✅ Post ID: {created_post.get('id')}")
+                print(f"✅ Draft URL: {response_data['draft_url']}")
             elif response.status_code == 401:
                 response_data = {
                     "status": "error",
@@ -362,6 +366,9 @@ class GhostCMSTool(BaseTool):
                     "post_data": post_data
                 }
                 print(f"❌ Ghost CMS request failed with status {response.status_code}")
+                print(f"❌ Error details: {response.text}")
+                print(f"❌ API URL used: {api_url}")
+                print(f"❌ Post data sent: {json.dumps(post_data, indent=2)}")
             
             return json.dumps(response_data, indent=2)
             
