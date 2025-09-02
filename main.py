@@ -274,22 +274,45 @@ class BlogGenerationCrew:
                 try:
                     with open(output_path, 'r', encoding='utf-8') as f:
                         content = f.read()
-                        # Extract just the article content (between <article> tags)
+                        
+                        # Try to extract content from different possible formats
                         import re
+                        from bs4 import BeautifulSoup
+                        
+                        # First, try to find content between <article> tags (original format)
                         article_match = re.search(r'<article>(.*?)</article>', content, re.DOTALL)
                         if article_match:
                             article_content = article_match.group(1)
-                            # Convert HTML to readable text for preview
-                            from bs4 import BeautifulSoup
                             soup = BeautifulSoup(article_content, 'html.parser')
-                            preview_text = soup.get_text()[:2000]  # First 2000 characters
+                            preview_text = soup.get_text()[:2000]
+                        else:
+                            # Try to find HTML content after "-- Full content (HTML, ready for Ghost CMS import) --"
+                            html_section = re.search(r'-- Full content \(HTML, ready for Ghost CMS import\) --(.*?)(?=\n\n|\Z)', content, re.DOTALL)
+                            if html_section:
+                                html_content = html_section.group(1).strip()
+                                soup = BeautifulSoup(html_content, 'html.parser')
+                                preview_text = soup.get_text()[:2000]
+                            else:
+                                # Fallback: try to extract any HTML content
+                                soup = BeautifulSoup(content, 'html.parser')
+                                preview_text = soup.get_text()[:2000]
+                        
+                        if preview_text.strip():
                             print(preview_text)
                             if len(soup.get_text()) > 2000:
                                 print("\n... (content truncated for preview)")
                         else:
-                            print("Content preview not available")
+                            print("Content preview not available - no readable content found")
+                            
                 except Exception as e:
                     print(f"Could not preview content: {e}")
+                    print("Raw content preview:")
+                    try:
+                        with open(output_path, 'r', encoding='utf-8') as f:
+                            raw_content = f.read()
+                            print(raw_content[:1000] + "..." if len(raw_content) > 1000 else raw_content)
+                    except:
+                        print("Could not read file for preview")
                 
                 print("=" * 60)
                 print(f"📁 Full content available at: {output_path}")
