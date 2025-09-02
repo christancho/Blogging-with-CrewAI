@@ -46,8 +46,16 @@ class BraveSearchTool(BaseTool):
                         else:
                             query = str(parsed[0])
                             print(f"🔍 Using first element as string: {query}")
+                    elif isinstance(parsed, dict):
+                        # Handle case where the input is a single dict
+                        if 'query' in parsed:
+                            query = parsed['query']
+                            print(f"🔍 Extracted query from single dict: {query}")
+                        else:
+                            query = str(parsed)
+                            print(f"🔍 Using dict as string: {query}")
                     else:
-                        print(f"🔍 Not a list or empty list, using original query")
+                        print(f"🔍 Not a list or dict, using original query")
                         
                 except json.JSONDecodeError as e:
                     print(f"⚠️ JSON parsing failed: {e}")
