@@ -24,23 +24,46 @@ class BraveSearchTool(BaseTool):
                 try:
                     # Try to parse as JSON and extract the actual query
                     parsed = json.loads(query)
+                    print(f"🔍 Parsed JSON structure: {type(parsed)} with {len(parsed) if isinstance(parsed, list) else 'N/A'} elements")
+                    
                     if isinstance(parsed, list) and len(parsed) > 0:
+                        # Check if first element is a dict with query
                         if isinstance(parsed[0], dict) and 'query' in parsed[0]:
                             query = parsed[0]['query']
+                            print(f"🔍 Extracted query from dict: {query}")
+                        # Check if first element is a string
+                        elif isinstance(parsed[0], str):
+                            query = parsed[0]
+                            print(f"🔍 Using first string element: {query}")
+                        # Check if it's a nested structure
+                        elif isinstance(parsed[0], list) and len(parsed[0]) > 0:
+                            if isinstance(parsed[0][0], dict) and 'query' in parsed[0][0]:
+                                query = parsed[0][0]['query']
+                                print(f"🔍 Extracted query from nested structure: {query}")
+                            else:
+                                query = str(parsed[0][0])
+                                print(f"🔍 Using first nested element: {query}")
                         else:
                             query = str(parsed[0])
-                except json.JSONDecodeError:
+                            print(f"🔍 Using first element as string: {query}")
+                    else:
+                        print(f"🔍 Not a list or empty list, using original query")
+                        
+                except json.JSONDecodeError as e:
+                    print(f"⚠️ JSON parsing failed: {e}")
                     # If JSON parsing fails, try to extract query from string using regex
                     query_match = re.search(r'"query":\s*"([^"]+)"', query)
                     if query_match:
                         query = query_match.group(1)
+                        print(f"🔍 Extracted query via regex: {query}")
                     else:
                         # Try to extract the first quoted string as query
                         first_quote = re.search(r'"([^"]+)"', query)
                         if first_quote:
                             query = first_quote.group(1)
+                            print(f"🔍 Extracted first quoted string: {query}")
                 except Exception as e:
-                    print(f"⚠️ JSON parsing error: {e}")
+                    print(f"⚠️ Unexpected parsing error: {e}")
                     # If all parsing fails, use the original query
                     pass
             
