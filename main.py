@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 CrewAI Blog Generation System
-Generates technical blog posts using AI agents with research, writing, SEO, and publishing capabilities.
+Generates high-quality blog posts on any topic using AI agents with research, writing, SEO, and publishing capabilities.
 """
 
 import os
@@ -86,8 +86,8 @@ class BlogGenerationCrew:
             print("\nPlease ensure you have set the following environment variables:")
             print("- OPENAI_API_KEY: Your OpenAI API key")
             print("- BRAVE_SEARCH_API_KEY: Your Brave Search API key")
-            print("- GHOST_API_KEY: Your Ghost CMS API key (optional)")
-            print("- GHOST_API_URL: Your Ghost CMS API URL (optional)")
+            print("- GHOST_API_KEY: Your Ghost CMS API key")
+            print("- GHOST_API_URL: Your Ghost CMS API URL")
             sys.exit(1)
     
     def _ensure_output_directory(self):
@@ -100,18 +100,18 @@ class BlogGenerationCrew:
         """Classify the topic to help tailor the research approach"""
         topic_lower = topic.lower()
         
-        # Define topic categories and keywords
+        # Define topic categories and keywords (expanded to include non-technical topics)
         categories = {
-            "software_development": ["programming", "coding", "development", "framework", "library", "api", "sdk"],
-            "cloud_computing": ["cloud", "aws", "azure", "gcp", "kubernetes", "docker", "serverless"],
-            "cybersecurity": ["security", "encryption", "vulnerability", "threat", "firewall", "authentication"],
-            "data_science": ["data", "analytics", "machine learning", "ai", "artificial intelligence", "ml"],
-            "devops": ["devops", "ci/cd", "deployment", "automation", "infrastructure", "monitoring"],
-            "web_development": ["web", "frontend", "backend", "javascript", "react", "vue", "angular"],
-            "mobile_development": ["mobile", "ios", "android", "react native", "flutter", "app development"],
-            "database": ["database", "sql", "nosql", "mongodb", "postgresql", "mysql", "redis"],
-            "networking": ["network", "tcp", "http", "dns", "routing", "protocol", "bandwidth"],
-            "emerging_tech": ["blockchain", "iot", "quantum", "ar", "vr", "5g", "edge computing"]
+            "technology": ["programming", "coding", "development", "framework", "library", "api", "sdk", "software", "tech", "computer"],
+            "business": ["business", "marketing", "sales", "finance", "entrepreneurship", "startup", "management", "strategy"],
+            "lifestyle": ["health", "fitness", "wellness", "nutrition", "travel", "fashion", "beauty", "home", "family"],
+            "education": ["learning", "teaching", "education", "school", "university", "course", "training", "skill"],
+            "science": ["science", "research", "study", "experiment", "discovery", "innovation", "biology", "chemistry", "physics"],
+            "arts_culture": ["art", "music", "culture", "literature", "film", "theater", "design", "creative", "entertainment"],
+            "sports": ["sports", "fitness", "athletics", "training", "competition", "team", "player", "game"],
+            "food_cooking": ["food", "cooking", "recipe", "cuisine", "restaurant", "chef", "kitchen", "dining"],
+            "travel": ["travel", "tourism", "vacation", "destination", "adventure", "explore", "journey", "trip"],
+            "personal_development": ["personal", "development", "growth", "motivation", "productivity", "mindfulness", "self-help"]
         }
         
         # Find matching categories
@@ -120,9 +120,9 @@ class BlogGenerationCrew:
             if any(keyword in topic_lower for keyword in keywords):
                 matched_categories.append(category)
         
-        # Default to general technical if no specific match
+        # Default to general if no specific match
         if not matched_categories:
-            matched_categories = ["general_technical"]
+            matched_categories = ["general"]
         
         return {
             "topic": topic,
@@ -201,17 +201,42 @@ class BlogGenerationCrew:
             print(f"📄 Output saved to: {output_path}")
             
             if user_approval:
-                print(f"\n👀 REVIEW REQUIRED:")
-                print("The blog post has been generated and saved as a draft.")
-                print("Please review the content before publishing to Ghost CMS.")
-                print(f"File location: {output_path}")
+                print(f"\n👀 FINAL DRAFT REVIEW:")
+                print("=" * 60)
+                print("📖 PREVIEW OF YOUR BLOG POST:")
+                print("=" * 60)
+                
+                # Display the final draft content
+                try:
+                    with open(output_path, 'r', encoding='utf-8') as f:
+                        content = f.read()
+                        # Extract just the article content (between <article> tags)
+                        import re
+                        article_match = re.search(r'<article>(.*?)</article>', content, re.DOTALL)
+                        if article_match:
+                            article_content = article_match.group(1)
+                            # Convert HTML to readable text for preview
+                            from bs4 import BeautifulSoup
+                            soup = BeautifulSoup(article_content, 'html.parser')
+                            preview_text = soup.get_text()[:2000]  # First 2000 characters
+                            print(preview_text)
+                            if len(soup.get_text()) > 2000:
+                                print("\n... (content truncated for preview)")
+                        else:
+                            print("Content preview not available")
+                except Exception as e:
+                    print(f"Could not preview content: {e}")
+                
+                print("=" * 60)
+                print(f"📁 Full content available at: {output_path}")
+                print("=" * 60)
                 
                 # Ask for user approval
-                approval = input("\nDo you approve this content for publication? (y/n): ").lower().strip()
+                approval = input("\nDo you approve this content for publication to Ghost CMS? (y/n): ").lower().strip()
                 
                 if approval == 'y' or approval == 'yes':
-                    print("✅ Content approved! Ready for Ghost CMS publication.")
-                    print("Note: You may need to manually import the HTML into Ghost CMS.")
+                    print("✅ Content approved! Publishing to Ghost CMS...")
+                    return output_path
                 else:
                     print("❌ Content not approved. Please review and make necessary changes.")
                     return output_path

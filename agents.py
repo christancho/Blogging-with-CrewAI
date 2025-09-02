@@ -1,5 +1,5 @@
 from crewai import Agent
-from tools import BraveSearchTool, SEOAnalysisTool, HTMLFormatterTool, GhostCMSTool, ContentAnalysisTool
+from tools import BraveSearchTool, SEOAnalysisTool, HTMLFormatterTool, GhostCMSTool, ContentAnalysisTool, TagExtractionTool
 
 class BlogAgents:
     """Define all agents for the blog generation crew"""
@@ -27,7 +27,7 @@ class BlogAgents:
     def content_writer_agent(self):
         return Agent(
             role="Technical Content Creator",
-            goal="Create engaging, informative 2500-word technical articles with proper structure and clarity",
+            goal="Create engaging, informative 3500-word articles with proper structure and clarity",
             backstory="""You are an experienced technical writer who specializes in making complex technology concepts accessible to technical audiences. You have a talent for:
             
             - Breaking down complex technical topics into digestible sections
@@ -36,7 +36,7 @@ class BlogAgents:
             - Including practical examples and real-world applications
             - Adapting your writing style to match the complexity and audience of the topic
             
-            You understand that great technical writing balances depth with readability, ensuring that readers gain valuable insights while staying engaged throughout the article. Your articles follow a consistent structure: introduction, four main sections, and conclusion, totaling approximately 2500 words.""",
+            You understand that great writing balances depth with readability, ensuring that readers gain valuable insights while staying engaged throughout the article. Your articles follow a consistent structure: introduction, four main sections, and conclusion, totaling approximately 3500 words.""",
             tools=[ContentAnalysisTool()],
             verbose=True,
             allow_delegation=False,
@@ -122,7 +122,7 @@ class BlogAgents:
             - Coordinating the final publication workflow
             
             You work closely with the editorial team to ensure that content is properly formatted, tagged, and ready for publication. You understand that the publication process is the final step in delivering valuable technical content to readers, and you take pride in ensuring everything is perfect before it goes live.""",
-            tools=[GhostCMSTool(), HTMLFormatterTool()],
+            tools=[GhostCMSTool(), HTMLFormatterTool(), TagExtractionTool()],
             verbose=True,
             allow_delegation=False,
             max_iter=2

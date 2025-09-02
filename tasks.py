@@ -23,56 +23,56 @@ class BlogTasks:
             Use multiple search queries to gather diverse perspectives and ensure comprehensive coverage.
             Focus on authoritative sources like official documentation, reputable tech blogs, research papers, and industry publications.
             
-            Compile your findings into a structured research report that will serve as the foundation for creating a 2500-word technical article.""",
+            Compile your findings into a structured research report that will serve as the foundation for creating a 3500-word article.""",
             agent=self.agents.research_agent(),
             expected_output="A comprehensive research report with key findings, sources, and structured information ready for content creation"
         )
     
     def content_creation_task(self, topic: str):
         return Task(
-            description=f"""Create a comprehensive 2500-word technical article on "{topic}" using the research provided.
+            description=f"""Create a comprehensive 3500-word article on "{topic}" using the research provided.
             
             Structure the article as follows:
-            1. **Introduction** (300-400 words)
+            1. **Introduction** (400-500 words)
                - Hook the reader with an engaging opening
                - Provide context and background
                - Clearly state what the article will cover
                - Explain why this topic is important/relevant
             
-            2. **Section 1** (500-600 words)
+            2. **Section 1** (600-700 words)
                - Cover the foundational concepts
                - Explain key terminology and basic principles
                - Provide necessary background information
             
-            3. **Section 2** (500-600 words)
-               - Dive deeper into technical details
-               - Discuss implementation approaches or methodologies
+            3. **Section 2** (600-700 words)
+               - Dive deeper into details and concepts
+               - Discuss approaches or methodologies
                - Include practical examples where appropriate
             
-            4. **Section 3** (500-600 words)
+            4. **Section 3** (600-700 words)
                - Explore advanced concepts or applications
                - Discuss best practices and common pitfalls
                - Share real-world use cases or case studies
             
-            5. **Section 4** (400-500 words)
+            5. **Section 4** (500-600 words)
                - Cover future trends and developments
                - Discuss challenges and opportunities
                - Provide actionable insights for readers
             
-            6. **Conclusion** (200-300 words)
+            6. **Conclusion** (300-400 words)
                - Summarize key takeaways
                - Reinforce the importance of the topic
                - Provide next steps or recommendations for readers
             
             Writing Guidelines:
-            - Write for a technical audience with intermediate to advanced knowledge
-            - Use clear, engaging language that maintains technical accuracy
-            - Include specific examples, code snippets, or technical details where relevant
+            - Write for the appropriate audience based on the topic
+            - Use clear, engaging language that maintains accuracy
+            - Include specific examples, case studies, or relevant details where appropriate
             - Ensure smooth transitions between sections
             - Maintain consistent tone and style throughout
-            - Target approximately 2500 words total""",
+            - Target approximately 3500 words total""",
             agent=self.agents.content_writer_agent(),
-            expected_output="A well-structured 2500-word technical article with introduction, four main sections, and conclusion"
+            expected_output="A well-structured 3500-word article with introduction, four main sections, and conclusion"
         )
     
     def seo_optimization_task(self, topic: str):
@@ -113,9 +113,14 @@ class BlogTasks:
                - Optimize for voice search queries
                - Include FAQ-style sections where appropriate
             
-            Provide the optimized content along with SEO analysis and recommendations.""",
+            7. **Tag Generation**
+               - Generate 5-8 relevant tags based on the content
+               - Include primary topic tags, related concepts, and audience-specific tags
+               - Ensure tags are SEO-friendly and descriptive
+            
+            Provide the optimized content along with SEO analysis, recommendations, and generated tags.""",
             agent=self.agents.seo_optimizer_agent(),
-            expected_output="SEO-optimized article with title, meta description, proper header structure, and keyword optimization analysis"
+            expected_output="SEO-optimized article with title, meta description, proper header structure, keyword optimization analysis, and generated tags"
         )
     
     def html_formatting_task(self):
@@ -163,7 +168,7 @@ class BlogTasks:
                - Verify technical accuracy and factual correctness
                - Check for logical flow and coherent structure
                - Ensure all sections contribute to the overall narrative
-               - Validate that the content meets the 2500-word target
+               - Validate that the content meets the 3500-word target
             
             2. **Technical Writing Standards**
                - Assess clarity and readability for the target audience
@@ -205,14 +210,15 @@ class BlogTasks:
                - Check that meta information is complete
             
             2. **Metadata Setup**
-               - Set appropriate tags for the technical topic
+               - Use auto-generated tags from SEO optimization
                - Configure author information
                - Set publication status to "draft"
                - Add relevant categories or collections
             
             3. **Draft Creation**
+               - Extract auto-generated tags from SEO optimization output
                - Prepare the content for Ghost CMS import
-               - Generate the publication payload
+               - Generate the publication payload with proper tags
                - Create draft ready for user review
             
             4. **User Review Preparation**

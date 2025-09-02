@@ -139,8 +139,7 @@ class GhostCMSTool(BaseTool):
     def _run(self, title: str, html_content: str, meta_description: str = "", tags: List[str] = None) -> str:
         """Publish content to Ghost CMS as draft"""
         try:
-            if not Config.GHOST_API_KEY or not Config.GHOST_API_URL:
-                return "Ghost CMS credentials not configured. Content prepared for manual upload."
+            # Ghost CMS credentials are now mandatory, so this should always be configured
             
             # Prepare the post data
             post_data = {
@@ -149,7 +148,7 @@ class GhostCMSTool(BaseTool):
                     "html": html_content,
                     "meta_description": meta_description,
                     "status": "draft",
-                    "tags": tags or Config.GHOST_CONFIG["tags"],
+                    "tags": tags or Config.GHOST_CONFIG["default_tags"],
                     "authors": [Config.GHOST_CONFIG["author_id"]]
                 }]
             }
@@ -159,18 +158,91 @@ class GhostCMSTool(BaseTool):
                 "Content-Type": "application/json"
             }
             
-            # This is a placeholder for actual Ghost CMS API integration
-            # In a real implementation, you would make the API call here
-            response_data = {
-                "status": "draft_prepared",
-                "message": "Content formatted and ready for Ghost CMS upload",
-                "post_data": post_data
-            }
+            # Make actual API call to Ghost CMS
+            api_url = f"{Config.GHOST_API_URL}/ghost/api/content/posts/"
+            
+            response = requests.post(
+                api_url,
+                headers=headers,
+                json=post_data,
+                timeout=30
+            )
+            
+            if response.status_code == 201:
+                post_response = response.json()
+                created_post = post_response.get('posts', [{}])[0]
+                
+                response_data = {
+                    "status": "success",
+                    "message": "Draft successfully created in Ghost CMS",
+                    "post_id": created_post.get('id'),
+                    "post_url": created_post.get('url'),
+                    "post_title": created_post.get('title'),
+                    "draft_url": f"{Config.GHOST_API_URL.replace('/ghost', '')}/ghost/#/editor/post/{created_post.get('id')}"
+                }
+            else:
+                response_data = {
+                    "status": "error",
+                    "message": f"Failed to create draft in Ghost CMS. Status: {response.status_code}",
+                    "error_details": response.text,
+                    "post_data": post_data
+                }
             
             return json.dumps(response_data, indent=2)
             
         except Exception as e:
             return f"Error preparing Ghost CMS content: {str(e)}"
+
+class TagExtractionTool(BaseTool):
+    name: str = "Tag Extraction"
+    description: str = "Extract generated tags from SEO optimization output"
+    
+    def _run(self, seo_output: str) -> str:
+        """Extract tags from SEO optimization output"""
+        try:
+            import re
+            import json
+            
+            # Look for tags in various formats
+            tag_patterns = [
+                r'tags?:\s*\[(.*?)\]',  # tags: ["tag1", "tag2"]
+                r'generated tags?:\s*\[(.*?)\]',  # generated tags: ["tag1", "tag2"]
+                r'#(\w+)',  # hashtag format
+                r'Tags:\s*(.*?)(?:\n|$)',  # Tags: tag1, tag2, tag3
+            ]
+            
+            tags = []
+            for pattern in tag_patterns:
+                matches = re.findall(pattern, seo_output, re.IGNORECASE | re.MULTILINE)
+                for match in matches:
+                    if '[' in match and ']' in match:
+                        # JSON array format
+                        try:
+                            tag_list = json.loads(f'[{match}]')
+                            tags.extend(tag_list)
+                        except:
+                            pass
+                    else:
+                        # Comma-separated format
+                        tag_list = [tag.strip().strip('"\'') for tag in match.split(',')]
+                        tags.extend(tag_list)
+            
+            # Clean and deduplicate tags
+            clean_tags = []
+            for tag in tags:
+                if tag and len(tag) > 1 and tag not in clean_tags:
+                    # Remove special characters and make lowercase
+                    clean_tag = re.sub(r'[^\w\s-]', '', tag.lower().strip())
+                    if clean_tag:
+                        clean_tags.append(clean_tag)
+            
+            # Limit to 8 tags max
+            clean_tags = clean_tags[:8]
+            
+            return json.dumps(clean_tags, indent=2)
+            
+        except Exception as e:
+            return f"Error extracting tags: {str(e)}"
 
 class ContentAnalysisTool(BaseTool):
     name: str = "Content Analysis"

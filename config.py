@@ -14,7 +14,7 @@ class Config:
     GHOST_API_URL = os.getenv("GHOST_API_URL")
     
     # Blog Settings
-    DEFAULT_WORD_COUNT = 2500
+    DEFAULT_WORD_COUNT = 3500
     BLOG_STRUCTURE = {
         "sections": 4,
         "include_intro": True,
@@ -38,7 +38,7 @@ class Config:
     GHOST_CONFIG = {
         "publish_as_draft": True,
         "author_id": os.getenv("GHOST_AUTHOR_ID", "1"),
-        "tags": ["technical", "blog", "auto-generated"]
+        "default_tags": ["blog", "auto-generated"]  # Fallback tags if none generated
     }
     
     @classmethod
@@ -46,7 +46,9 @@ class Config:
         """Validate that required configuration is present"""
         required_vars = [
             "OPENAI_API_KEY",
-            "BRAVE_SEARCH_API_KEY"
+            "BRAVE_SEARCH_API_KEY",
+            "GHOST_API_KEY",
+            "GHOST_API_URL"
         ]
         
         missing_vars = []
