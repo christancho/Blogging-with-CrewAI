@@ -206,38 +206,35 @@ class BlogTasks:
     
     def ghost_publication_task(self, topic: str):
         return Task(
-            description=f"""Prepare the technical article on "{topic}" for Ghost CMS publication as a draft.
+            description=f"""Publish the article on "{topic}" to Ghost CMS as a draft using the Ghost CMS Publisher tool.
             
-            Publication Preparation:
+            IMPORTANT: You MUST use the Ghost CMS Publisher tool to actually publish the content.
             
-            1. **Content Finalization**
-               - Ensure HTML is Ghost CMS ready
-               - Verify all formatting is correct
-               - Check that meta information is complete
+            Publication Steps:
             
-            2. **Metadata Setup**
-               - Use auto-generated tags from SEO optimization
-               - Configure author information
-               - Set publication status to "draft"
-               - Add relevant categories or collections
-            
-            3. **Draft Creation**
+            1. **Extract Content and Metadata**
+               - Get the final formatted content from previous tasks
+               - Extract the article title from the content
+               - Get the meta description from SEO optimization
                - Extract auto-generated tags from SEO optimization output
-               - Prepare the content for Ghost CMS import
-               - Generate the publication payload with proper tags
-               - Create draft ready for user review
             
-            4. **User Review Preparation**
-               - Compile final content for user approval
-               - Provide summary of what was created
-               - Include instructions for review and publication
+            2. **Call Ghost CMS Publisher Tool**
+               - Use the Ghost CMS Publisher tool with these parameters:
+                 * title: The article title
+                 * content: The final formatted content (HTML or Markdown)
+                 * meta_description: The SEO meta description
+                 * tags: The auto-generated tags from SEO optimization
             
-            5. **Publication Instructions**
-               - Provide clear next steps for the user
-               - Include any manual steps needed in Ghost CMS
-               - Offer guidance on final publication process
+            3. **Verify Publication**
+               - Check the tool response for success/failure
+               - Report the publication status to the user
+               - Provide the draft URL if successful
             
-            Note: The content will be prepared as a draft and will require user approval before final publication.""",
+            4. **Error Handling**
+               - If publication fails, report the specific error
+               - Provide troubleshooting guidance if needed
+            
+            CRITICAL: You must actually call the Ghost CMS Publisher tool - do not just describe what should be done.""",
             agent=self.agents.ghost_publisher_agent(),
-            expected_output="Ghost CMS draft preparation with content ready for user review and approval before publication"
+            expected_output="Ghost CMS publication result with draft URL or error message"
         )

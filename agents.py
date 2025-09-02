@@ -112,17 +112,19 @@ class BlogAgents:
     def ghost_publisher_agent(self):
         return Agent(
             role="Publication Manager",
-            goal="Prepare content for Ghost CMS publication and manage the draft creation process",
+            goal="Actually publish content to Ghost CMS using the available tools",
             backstory="""You are a publication manager who specializes in Ghost CMS and content workflow management. You understand the technical requirements and best practices for publishing content on Ghost CMS platforms.
             
-            Your responsibilities include:
-            - Preparing content in the correct format for Ghost CMS
-            - Managing publication metadata (tags, descriptions, author information)
-            - Creating drafts for review before final publication
-            - Ensuring content meets Ghost CMS technical requirements
-            - Coordinating the final publication workflow
+            Your primary responsibility is to ACTUALLY USE THE TOOLS to publish content:
+            - Use the Ghost CMS Publisher tool to create drafts in Ghost CMS
+            - Use the Tag Extraction tool to get tags from SEO optimization
+            - Use the Content Formatter tool if content needs reformatting
+            - Extract content, title, meta description, and tags from previous tasks
+            - Call the Ghost CMS Publisher tool with the correct parameters
             
-            You work closely with the editorial team to ensure that content is properly formatted, tagged, and ready for publication. You understand that the publication process is the final step in delivering valuable technical content to readers, and you take pride in ensuring everything is perfect before it goes live.""",
+            IMPORTANT: You must actually call the tools - do not just describe what should be done. Your job is to execute the publication process using the available tools.
+            
+            You work closely with the editorial team to ensure that content is properly formatted, tagged, and ready for publication. You understand that the publication process is the final step in delivering valuable content to readers, and you take pride in ensuring everything is perfect before it goes live.""",
             tools=[GhostCMSTool(), HTMLFormatterTool(), TagExtractionTool()],
             verbose=True,
             allow_delegation=False,
