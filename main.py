@@ -73,15 +73,14 @@ class ProgressTracker:
     """Track progress of the blog generation workflow"""
     
     def __init__(self):
-        self.total_steps = 6  # Research, Content, SEO, HTML, Review, Publish
+        self.total_steps = 5  # Research, Content, SEO, HTML, Review (Publish happens after approval)
         self.current_step = 0
         self.step_names = [
             "Research",
             "Content Creation", 
             "SEO Optimization",
             "Content Formatting",
-            "Quality Review",
-            "Ghost Publishing"
+            "Quality Review"
         ]
     
     def start_step(self, step_name):
@@ -214,38 +213,34 @@ class BlogGenerationCrew:
             print(f"⏱️  Estimated time: 15-30 minutes")
             print("💡 Rate limit protection enabled: Will automatically wait if TPM exceeds 200,000\n")
             
-            # Define the crew tasks
+            # Define the crew tasks (without publication - that happens after user approval)
             research_task = self.tasks.research_task(topic)
             content_task = self.tasks.content_creation_task(topic)
             seo_task = self.tasks.seo_optimization_task(topic)
             html_task = self.tasks.html_formatting_task()
             review_task = self.tasks.quality_review_task(topic)
-            publish_task = self.tasks.ghost_publication_task(topic)
             
             # Set up task dependencies
             content_task.context = [research_task]
             seo_task.context = [content_task]
             html_task.context = [seo_task]
             review_task.context = [html_task]
-            publish_task.context = [review_task]
             
-            # Create the crew
+            # Create the crew (without publication - that happens after user approval)
             crew = Crew(
                 agents=[
                     self.agents.research_agent(),
                     self.agents.content_writer_agent(),
                     self.agents.seo_optimizer_agent(),
                     self.agents.html_formatter_agent(),
-                    self.agents.quality_reviewer_agent(),
-                    self.agents.ghost_publisher_agent()
+                    self.agents.quality_reviewer_agent()
                 ],
                 tasks=[
                     research_task,
                     content_task,
                     seo_task,
                     html_task,
-                    review_task,
-                    publish_task
+                    review_task
                 ],
                 process=Process.sequential,
                 verbose=True
@@ -323,6 +318,68 @@ class BlogGenerationCrew:
                 
                 if approval == 'y' or approval == 'yes':
                     print("✅ Content approved! Publishing to Ghost CMS...")
+                    
+                    # Actually publish to Ghost CMS
+                    try:
+                        from tools import GhostCMSTool
+                        from config import Config
+                        
+                        # Extract content and metadata from the generated file
+                        with open(output_path, 'r', encoding='utf-8') as f:
+                            content = f.read()
+                        
+                        # Extract title from content (look for H1 tag or title in the content)
+                        import re
+                        from bs4 import BeautifulSoup
+                        
+                        # Try to find title in HTML content
+                        title_match = re.search(r'<h1[^>]*>(.*?)</h1>', content, re.IGNORECASE)
+                        if title_match:
+                            title = BeautifulSoup(title_match.group(1), 'html.parser').get_text().strip()
+                        else:
+                            # Fallback: use the topic as title
+                            title = topic
+                        
+                        # Extract meta description if available
+                        meta_desc_match = re.search(r'Meta description:\s*(.+?)(?:\n|$)', content)
+                        meta_description = meta_desc_match.group(1).strip() if meta_desc_match else ""
+                        
+                        # Extract tags if available
+                        tags_match = re.search(r'Tags:\s*(\[.*?\])', content)
+                        tags = []
+                        if tags_match:
+                            try:
+                                import json
+                                tags = json.loads(tags_match.group(1))
+                            except:
+                                tags = Config.GHOST_CONFIG["default_tags"]
+                        else:
+                            tags = Config.GHOST_CONFIG["default_tags"]
+                        
+                        # Extract HTML content for publishing
+                        html_section = re.search(r'-- Full content \(HTML, ready for Ghost CMS import\) --(.*?)(?=\n\n|\Z)', content, re.DOTALL)
+                        if html_section:
+                            html_content = html_section.group(1).strip()
+                        else:
+                            # Fallback: use the entire content
+                            html_content = content
+                        
+                        # Create Ghost CMS tool and publish
+                        ghost_tool = GhostCMSTool()
+                        result = ghost_tool._run(
+                            title=title,
+                            content=html_content,
+                            meta_description=meta_description,
+                            tags=tags
+                        )
+                        
+                        print("📝 Ghost CMS Publication Result:")
+                        print(result)
+                        
+                    except Exception as e:
+                        print(f"❌ Error publishing to Ghost CMS: {str(e)}")
+                        print("📄 Content saved locally but not published to Ghost CMS")
+                    
                     return output_path
                 else:
                     print("❌ Content not approved. Please review and make necessary changes.")
