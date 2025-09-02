@@ -134,11 +134,11 @@ class SEOAnalysisTool(BaseTool):
             return f"Error analyzing SEO: {str(e)}"
 
 class HTMLFormatterTool(BaseTool):
-    name: str = "HTML Formatter"
-    description: str = "Format content as HTML suitable for Ghost CMS publication"
+    name: str = "Content Formatter"
+    description: str = "Format content as HTML and Markdown suitable for Ghost CMS publication"
     
     def _run(self, content: str, title: str, meta_description: str = "") -> str:
-        """Format content as HTML for Ghost CMS"""
+        """Format content as HTML and Markdown for Ghost CMS"""
         try:
             # Clean and structure the content
             formatted_html = f"""<!DOCTYPE html>
@@ -156,25 +156,101 @@ class HTMLFormatterTool(BaseTool):
 </body>
 </html>"""
             
-            return formatted_html
+            # Also create Markdown version
+            markdown_content = self._html_to_markdown(formatted_html)
+            
+            # Return both formats
+            return f"""
+HTML FORMAT:
+{formatted_html}
+
+MARKDOWN FORMAT:
+{markdown_content}
+"""
             
         except Exception as e:
-            return f"Error formatting HTML: {str(e)}"
+            return f"Error formatting content: {str(e)}"
+    
+    def _html_to_markdown(self, html_content: str) -> str:
+        """Convert HTML content to Markdown"""
+        try:
+            from bs4 import BeautifulSoup
+            import re
+            
+            # Parse HTML
+            soup = BeautifulSoup(html_content, 'html.parser')
+            
+            # Remove HTML wrapper tags if present
+            article = soup.find('article')
+            if article:
+                content = article
+            else:
+                content = soup
+            
+            # Convert to Markdown
+            markdown = ""
+            
+            for element in content.find_all(['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'p', 'ul', 'ol', 'li', 'strong', 'em', 'code', 'pre', 'blockquote']):
+                if element.name in ['h1', 'h2', 'h3', 'h4', 'h5', 'h6']:
+                    level = int(element.name[1])
+                    markdown += f"{'#' * level} {element.get_text().strip()}\n\n"
+                elif element.name == 'p':
+                    text = element.get_text().strip()
+                    if text:
+                        markdown += f"{text}\n\n"
+                elif element.name == 'ul':
+                    for li in element.find_all('li'):
+                        markdown += f"- {li.get_text().strip()}\n"
+                    markdown += "\n"
+                elif element.name == 'ol':
+                    for i, li in enumerate(element.find_all('li'), 1):
+                        markdown += f"{i}. {li.get_text().strip()}\n"
+                    markdown += "\n"
+                elif element.name == 'li':
+                    # Handle nested lists
+                    text = element.get_text().strip()
+                    if text:
+                        markdown += f"- {text}\n"
+                elif element.name == 'strong':
+                    markdown += f"**{element.get_text().strip()}**"
+                elif element.name == 'em':
+                    markdown += f"*{element.get_text().strip()}*"
+                elif element.name == 'code':
+                    markdown += f"`{element.get_text().strip()}`"
+                elif element.name == 'pre':
+                    code_text = element.get_text().strip()
+                    markdown += f"```\n{code_text}\n```\n\n"
+                elif element.name == 'blockquote':
+                    quote_text = element.get_text().strip()
+                    markdown += f"> {quote_text}\n\n"
+            
+            # Clean up extra newlines
+            markdown = re.sub(r'\n{3,}', '\n\n', markdown)
+            return markdown.strip()
+            
+        except Exception as e:
+            # Fallback: return plain text
+            from bs4 import BeautifulSoup
+            soup = BeautifulSoup(html_content, 'html.parser')
+            return soup.get_text().strip()
 
 class GhostCMSTool(BaseTool):
     name: str = "Ghost CMS Publisher"
     description: str = "Publish content to Ghost CMS as a draft"
     
-    def _run(self, title: str, html_content: str, meta_description: str = "", tags: List[str] = None) -> str:
+    def _run(self, title: str, content: str, meta_description: str = "", tags: List[str] = None) -> str:
         """Publish content to Ghost CMS as draft"""
         try:
             # Ghost CMS credentials are now mandatory, so this should always be configured
+            
+            # Convert HTML to Markdown if needed
+            markdown_content = self._html_to_markdown(content)
             
             # Prepare the post data
             post_data = {
                 "posts": [{
                     "title": title,
-                    "html": html_content,
+                    "mobiledoc": self._markdown_to_mobiledoc(markdown_content),
                     "meta_description": meta_description,
                     "status": "draft",
                     "tags": tags or Config.GHOST_CONFIG["default_tags"],
@@ -247,6 +323,111 @@ class GhostCMSTool(BaseTool):
             
         except Exception as e:
             return f"Error preparing Ghost CMS content: {str(e)}"
+    
+    def _html_to_markdown(self, html_content: str) -> str:
+        """Convert HTML content to Markdown"""
+        try:
+            from bs4 import BeautifulSoup
+            import re
+            
+            # Parse HTML
+            soup = BeautifulSoup(html_content, 'html.parser')
+            
+            # Remove HTML wrapper tags if present
+            article = soup.find('article')
+            if article:
+                content = article
+            else:
+                content = soup
+            
+            # Convert to Markdown
+            markdown = ""
+            
+            for element in content.find_all(['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'p', 'ul', 'ol', 'li', 'strong', 'em', 'code', 'pre', 'blockquote']):
+                if element.name in ['h1', 'h2', 'h3', 'h4', 'h5', 'h6']:
+                    level = int(element.name[1])
+                    markdown += f"{'#' * level} {element.get_text().strip()}\n\n"
+                elif element.name == 'p':
+                    text = element.get_text().strip()
+                    if text:
+                        markdown += f"{text}\n\n"
+                elif element.name == 'ul':
+                    for li in element.find_all('li'):
+                        markdown += f"- {li.get_text().strip()}\n"
+                    markdown += "\n"
+                elif element.name == 'ol':
+                    for i, li in enumerate(element.find_all('li'), 1):
+                        markdown += f"{i}. {li.get_text().strip()}\n"
+                    markdown += "\n"
+                elif element.name == 'li':
+                    # Handle nested lists
+                    text = element.get_text().strip()
+                    if text:
+                        markdown += f"- {text}\n"
+                elif element.name == 'strong':
+                    markdown += f"**{element.get_text().strip()}**"
+                elif element.name == 'em':
+                    markdown += f"*{element.get_text().strip()}*"
+                elif element.name == 'code':
+                    markdown += f"`{element.get_text().strip()}`"
+                elif element.name == 'pre':
+                    code_text = element.get_text().strip()
+                    markdown += f"```\n{code_text}\n```\n\n"
+                elif element.name == 'blockquote':
+                    quote_text = element.get_text().strip()
+                    markdown += f"> {quote_text}\n\n"
+            
+            # Clean up extra newlines
+            markdown = re.sub(r'\n{3,}', '\n\n', markdown)
+            return markdown.strip()
+            
+        except Exception as e:
+            # Fallback: return plain text
+            from bs4 import BeautifulSoup
+            soup = BeautifulSoup(html_content, 'html.parser')
+            return soup.get_text().strip()
+    
+    def _markdown_to_mobiledoc(self, markdown_content: str) -> dict:
+        """Convert Markdown to Ghost CMS Mobiledoc format"""
+        try:
+            # Simple Mobiledoc structure for Ghost CMS
+            # This is a basic implementation - Ghost will handle the conversion
+            mobiledoc = {
+                "version": "0.3.1",
+                "markups": [],
+                "atoms": [],
+                "cards": [
+                    [
+                        "markdown",
+                        {
+                            "markdown": markdown_content
+                        }
+                    ]
+                ],
+                "sections": [
+                    [10, 0]
+                ]
+            }
+            return mobiledoc
+            
+        except Exception as e:
+            # Fallback: return simple text card
+            return {
+                "version": "0.3.1",
+                "markups": [],
+                "atoms": [],
+                "cards": [
+                    [
+                        "markdown",
+                        {
+                            "markdown": markdown_content
+                        }
+                    ]
+                ],
+                "sections": [
+                    [10, 0]
+                ]
+            }
 
 class TagExtractionTool(BaseTool):
     name: str = "Tag Extraction"

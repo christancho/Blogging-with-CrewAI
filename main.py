@@ -79,7 +79,7 @@ class ProgressTracker:
             "Research",
             "Content Creation", 
             "SEO Optimization",
-            "HTML Formatting",
+            "Content Formatting",
             "Quality Review",
             "Ghost Publishing"
         ]
