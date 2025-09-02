@@ -13,6 +13,28 @@ class BraveSearchTool(BaseTool):
     def _run(self, query: str, count: int = 10) -> str:
         """Execute a search query using Brave Search API"""
         try:
+            # Handle complex input that might include previous results
+            if isinstance(query, str) and query.startswith('['):
+                try:
+                    # Try to parse as JSON and extract the actual query
+                    import json
+                    parsed = json.loads(query)
+                    if isinstance(parsed, list) and len(parsed) > 0:
+                        if isinstance(parsed[0], dict) and 'query' in parsed[0]:
+                            query = parsed[0]['query']
+                        else:
+                            query = str(parsed[0])
+                except:
+                    # If parsing fails, use the original query
+                    pass
+            
+            # Clean the query string
+            query = str(query).strip()
+            
+            # Validate query
+            if not query or len(query) < 3:
+                return "Error: Query too short or empty"
+            
             headers = {
                 "Accept": "application/json",
                 "Accept-Encoding": "gzip",
@@ -47,9 +69,16 @@ class BraveSearchTool(BaseTool):
                             "published": result.get("age", "")
                         })
                 
+                if not results:
+                    return "No search results found for the query"
+                
                 return json.dumps(results, indent=2)
+            elif response.status_code == 401:
+                return "Error: Invalid Brave Search API key"
+            elif response.status_code == 429:
+                return "Error: Rate limit exceeded for Brave Search API"
             else:
-                return f"Search failed with status code: {response.status_code}"
+                return f"Search failed with status code: {response.status_code}. Response: {response.text[:200]}"
                 
         except Exception as e:
             return f"Error performing search: {str(e)}"
