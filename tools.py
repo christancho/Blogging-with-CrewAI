@@ -287,14 +287,11 @@ class GhostCMSTool(BaseTool):
         try:
             # Ghost CMS credentials are now mandatory, so this should always be configured
             
-            # Convert HTML to Markdown if needed
-            markdown_content = self._html_to_markdown(content)
-            
-            # Prepare the post data
+            # Prepare the post data using HTML format (Ghost will convert to Lexical)
             post_data = {
                 "posts": [{
                     "title": title,
-                    "mobiledoc": self._markdown_to_mobiledoc(markdown_content),
+                    "html": content,  # Use HTML directly with ?source=html parameter
                     "meta_description": meta_description,
                     "status": "draft",
                     "tags": tags or Config.GHOST_CONFIG["default_tags"],
@@ -304,12 +301,14 @@ class GhostCMSTool(BaseTool):
             
             headers = {
                 "Authorization": f"Ghost {Config.GHOST_API_KEY}",
-                "Content-Type": "application/json"
+                "Content-Type": "application/json",
+                "Accept-Version": "v5.0"
             }
             
             # Make actual API call to Ghost CMS Admin API
             # Note: This requires Admin API key, not Content API key
-            api_url = f"{Config.GHOST_API_URL}/ghost/api/admin/posts/"
+            # Use ?source=html to convert HTML to Lexical format
+            api_url = f"{Config.GHOST_API_URL}/admin/posts/?source=html"
             
             # Debug information
             print(f"🔗 Ghost CMS API URL: {api_url}")
@@ -336,7 +335,7 @@ class GhostCMSTool(BaseTool):
                     "post_id": created_post.get('id'),
                     "post_url": created_post.get('url'),
                     "post_title": created_post.get('title'),
-                    "draft_url": f"{Config.GHOST_API_URL.replace('/ghost', '')}/ghost/#/editor/post/{created_post.get('id')}"
+                    "draft_url": f"{Config.GHOST_API_URL}/ghost/#/editor/post/{created_post.get('id')}"
                 }
                 print(f"✅ Ghost CMS post created successfully: {created_post.get('title')}")
                 print(f"✅ Post ID: {created_post.get('id')}")
@@ -443,40 +442,28 @@ class GhostCMSTool(BaseTool):
         try:
             # Simple Mobiledoc structure for Ghost CMS
             # This is a basic implementation - Ghost will handle the conversion
+            # Convert markdown to simple HTML and then to mobiledoc
+            # For now, use a simple text-based mobiledoc
             mobiledoc = {
                 "version": "0.3.1",
                 "markups": [],
                 "atoms": [],
-                "cards": [
-                    [
-                        "markdown",
-                        {
-                            "markdown": markdown_content
-                        }
-                    ]
-                ],
+                "cards": [],
                 "sections": [
-                    [10, 0]
+                    [1, "p", [[0, [], 0, markdown_content]]]
                 ]
             }
             return mobiledoc
             
         except Exception as e:
-            # Fallback: return simple text card
+            # Fallback: return simple text mobiledoc
             return {
                 "version": "0.3.1",
                 "markups": [],
                 "atoms": [],
-                "cards": [
-                    [
-                        "markdown",
-                        {
-                            "markdown": markdown_content
-                        }
-                    ]
-                ],
+                "cards": [],
                 "sections": [
-                    [10, 0]
+                    [1, "p", [[0, [], 0, str(markdown_content)]]]
                 ]
             }
 
