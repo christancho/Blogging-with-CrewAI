@@ -69,6 +69,32 @@ class RateLimitHandler:
         # If we get here, all retries failed
         raise Exception("All retry attempts failed")
 
+class ProgressTracker:
+    """Track progress of the blog generation workflow"""
+    
+    def __init__(self):
+        self.total_steps = 6  # Research, Content, SEO, HTML, Review, Publish
+        self.current_step = 0
+        self.step_names = [
+            "Research",
+            "Content Creation", 
+            "SEO Optimization",
+            "HTML Formatting",
+            "Quality Review",
+            "Ghost Publishing"
+        ]
+    
+    def start_step(self, step_name):
+        """Start a new step"""
+        self.current_step += 1
+        percentage = int((self.current_step / self.total_steps) * 100)
+        print(f"\n🔄 Step {self.current_step}/{self.total_steps} ({percentage}%): {step_name}")
+        print("=" * 60)
+    
+    def get_progress(self):
+        """Get current progress percentage"""
+        return int((self.current_step / self.total_steps) * 100)
+
 class BlogGenerationCrew:
     """Main orchestrator for the blog generation crew"""
     
@@ -80,6 +106,7 @@ class BlogGenerationCrew:
             self.tasks = BlogTasks()
             self.output_dir = Config.OUTPUT_DIR
             self.rate_limit_handler = RateLimitHandler(max_tpm=10000)
+            self.progress_tracker = ProgressTracker()
             self._ensure_output_directory()
         except ValueError as e:
             print(f"Configuration Error: {e}")
@@ -95,6 +122,41 @@ class BlogGenerationCrew:
         if not os.path.exists(self.output_dir):
             os.makedirs(self.output_dir)
             print(f"Created output directory: {self.output_dir}")
+    
+    def _execute_crew_with_progress(self, crew):
+        """Execute crew with progress tracking"""
+        try:
+            # Execute each task individually with progress updates
+            tasks = crew.tasks
+            results = []
+            
+            for i, task in enumerate(tasks):
+                step_name = self.progress_tracker.step_names[i]
+                self.progress_tracker.start_step(step_name)
+                
+                # Execute the task
+                if i == 0:
+                    # First task has no context
+                    result = task.execute_sync()
+                else:
+                    # Subsequent tasks have context from previous tasks
+                    result = task.execute_sync()
+                
+                results.append(result)
+                
+                # Show completion
+                percentage = self.progress_tracker.get_progress()
+                print(f"✅ Step {i+1} completed ({percentage}%)")
+                
+                # Add a small delay to show progress
+                time.sleep(1)
+            
+            # Return the final result (from the last task)
+            return results[-1] if results else None
+            
+        except Exception as e:
+            print(f"\n❌ Error during crew execution: {str(e)}")
+            raise e
     
     def _classify_topic(self, topic: str) -> dict:
         """Classify the topic to help tailor the research approach"""
@@ -146,6 +208,12 @@ class BlogGenerationCrew:
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         
         try:
+            # Show initial progress
+            print(f"\n🚀 Starting blog generation workflow...")
+            print(f"📊 Total steps: {self.progress_tracker.total_steps}")
+            print(f"⏱️  Estimated time: 15-30 minutes")
+            print("💡 Rate limit protection enabled: Will automatically wait if TPM exceeds 10,000\n")
+            
             # Define the crew tasks
             research_task = self.tasks.research_task(topic)
             content_task = self.tasks.content_creation_task(topic)
@@ -183,12 +251,8 @@ class BlogGenerationCrew:
                 verbose=True
             )
             
-            print(f"\n🔄 Executing crew workflow...")
-            print("This may take several minutes as each agent completes their specialized tasks.")
-            print("💡 Rate limit protection enabled: Will automatically wait if TPM exceeds 10,000\n")
-            
-            # Execute the crew with rate limit handling
-            result = self.rate_limit_handler.execute_with_retry(crew)
+            # Execute the crew with progress tracking
+            result = self._execute_crew_with_progress(crew)
             
             # Save the result
             output_filename = f"blog_post_{timestamp}_{topic.replace(' ', '_').replace('/', '_')}.html"
@@ -197,7 +261,7 @@ class BlogGenerationCrew:
             with open(output_path, 'w', encoding='utf-8') as f:
                 f.write(str(result))
             
-            print(f"\n✅ Blog post generation completed!")
+            print(f"\n🎉 Blog post generation completed! (100%)")
             print(f"📄 Output saved to: {output_path}")
             
             if user_approval:

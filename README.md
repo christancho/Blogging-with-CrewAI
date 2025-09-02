@@ -43,8 +43,10 @@ cp .env.example .env
 2. **Go to Settings → Integrations**
 3. **Click "Add custom integration"**
 4. **Give it a name** (e.g., "Blog Generator")
-5. **Copy the Content API Key** (starts with something like `5d4c...`)
+5. **Copy the Admin API Key** (starts with something like `5d4c...`) - **NOT the Content API Key**
 6. **Use your Ghost site URL** (e.g., `https://your-site.com`)
+
+**⚠️ Important**: You need the **Admin API Key**, not the Content API Key, to create posts!
 
 ### 3. Configure Your Keys
 
@@ -205,6 +207,16 @@ OPENAI_TEMPERATURE=0.7
 **"Search failed with status code: 401"**
 - Verify your Brave Search API key is correct
 - Check if you've exceeded your 2000 free searches/month
+
+**"Ghost CMS authentication failed"**
+- Make sure you're using the **Admin API Key**, not the Content API Key
+- Verify your Ghost CMS URL is correct (should end with your domain, not `/ghost`)
+- Check that your Ghost site is accessible
+
+**"Ghost CMS API endpoint not found"**
+- Ensure your Ghost CMS URL is correct (e.g., `https://your-site.com`)
+- Make sure your Ghost site is running and accessible
+- Check that you have the correct permissions on your Ghost site
 
 **"Error during blog generation"**
 - Check your OpenAI API key and billing status

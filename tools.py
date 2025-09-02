@@ -187,8 +187,13 @@ class GhostCMSTool(BaseTool):
                 "Content-Type": "application/json"
             }
             
-            # Make actual API call to Ghost CMS
-            api_url = f"{Config.GHOST_API_URL}/ghost/api/content/posts/"
+            # Make actual API call to Ghost CMS Admin API
+            # Note: This requires Admin API key, not Content API key
+            api_url = f"{Config.GHOST_API_URL}/ghost/api/admin/posts/"
+            
+            # Debug information
+            print(f"🔗 Ghost CMS API URL: {api_url}")
+            print(f"🔑 Using API Key: {Config.GHOST_API_KEY[:10]}...")
             
             response = requests.post(
                 api_url,
@@ -196,6 +201,8 @@ class GhostCMSTool(BaseTool):
                 json=post_data,
                 timeout=30
             )
+            
+            print(f"📡 Ghost CMS Response Status: {response.status_code}")
             
             if response.status_code == 201:
                 post_response = response.json()
@@ -209,13 +216,32 @@ class GhostCMSTool(BaseTool):
                     "post_title": created_post.get('title'),
                     "draft_url": f"{Config.GHOST_API_URL.replace('/ghost', '')}/ghost/#/editor/post/{created_post.get('id')}"
                 }
+                print(f"✅ Ghost CMS post created successfully: {created_post.get('title')}")
+            elif response.status_code == 401:
+                response_data = {
+                    "status": "error",
+                    "message": "Authentication failed - check your Ghost CMS Admin API key",
+                    "error_details": response.text,
+                    "api_url": api_url
+                }
+                print(f"❌ Ghost CMS authentication failed")
+            elif response.status_code == 404:
+                response_data = {
+                    "status": "error",
+                    "message": "API endpoint not found - check your Ghost CMS URL",
+                    "error_details": response.text,
+                    "api_url": api_url
+                }
+                print(f"❌ Ghost CMS API endpoint not found")
             else:
                 response_data = {
                     "status": "error",
                     "message": f"Failed to create draft in Ghost CMS. Status: {response.status_code}",
                     "error_details": response.text,
+                    "api_url": api_url,
                     "post_data": post_data
                 }
+                print(f"❌ Ghost CMS request failed with status {response.status_code}")
             
             return json.dumps(response_data, indent=2)
             
