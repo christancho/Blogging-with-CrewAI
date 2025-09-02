@@ -25,6 +25,9 @@ class BraveSearchTool(BaseTool):
                     # Try to parse as JSON and extract the actual query
                     parsed = json.loads(query)
                     print(f"🔍 Parsed JSON structure: {type(parsed)} with {len(parsed) if isinstance(parsed, list) else 'N/A'} elements")
+                    print(f"🔍 First element type: {type(parsed[0]) if isinstance(parsed, list) and len(parsed) > 0 else 'N/A'}")
+                    if isinstance(parsed, list) and len(parsed) > 0 and isinstance(parsed[0], dict):
+                        print(f"🔍 First element keys: {list(parsed[0].keys())}")
                     
                     if isinstance(parsed, list) and len(parsed) > 0:
                         # Check if first element is a dict with query
