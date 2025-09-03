@@ -298,13 +298,15 @@ class GhostCMSTool(BaseTool):
         try:
             # Ghost CMS credentials are now mandatory, so this should always be configured
             
-            # Prepare the post data using HTML format (Ghost will convert to Lexical)
+            # Prepare the post data following official Ghost CMS API format
             post_data = {
                 "posts": [{
                     "title": title,
-                    "html": content,  # Use HTML directly with ?source=html parameter
-                    "meta_description": meta_description,
+                    "html": content,
                     "status": "draft",
+                    "excerpt": meta_description,
+                    "meta_title": title,
+                    "meta_description": meta_description,
                     "tags": tags or Config.GHOST_CONFIG["default_tags"],
                     "authors": [Config.GHOST_CONFIG["author_id"]]
                 }]
@@ -312,14 +314,12 @@ class GhostCMSTool(BaseTool):
             
             headers = {
                 "Authorization": f"Ghost {Config.GHOST_API_KEY}",
-                "Content-Type": "application/json",
-                "Accept-Version": "v5.0"
+                "Content-Type": "application/json"
             }
             
             # Make actual API call to Ghost CMS Admin API
             # Note: This requires Admin API key, not Content API key
-            # Use ?source=html to convert HTML to Lexical format
-            api_url = f"{Config.GHOST_API_URL}/admin/posts/?source=html"
+            api_url = f"{Config.GHOST_API_URL}/ghost/api/admin/posts/"
             
             # Debug information
             print(f"🔗 Ghost CMS API URL: {api_url}")
