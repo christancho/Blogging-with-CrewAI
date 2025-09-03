@@ -321,10 +321,10 @@ MARKDOWN FORMAT:
 
 class GhostCMSTool(BaseTool):
     name: str = "Ghost CMS Publisher"
-    description: str = "Publish content to Ghost CMS as a draft"
+    description: str = "Publish content to Ghost CMS as a draft using the official Ghost client"
     
     def _run(self, title: str, content: str, meta_description: str = "", tags: List[str] = None) -> str:
-        """Publish content to Ghost CMS as draft"""
+        """Publish content to Ghost CMS as draft using direct API calls"""
         try:
             # Generate JWT token for Ghost Admin API
             jwt_token = generate_ghost_jwt(Config.GHOST_API_KEY, Config.GHOST_API_URL)
@@ -343,8 +343,7 @@ class GhostCMSTool(BaseTool):
                     "excerpt": meta_description,
                     "meta_title": title,
                     "meta_description": meta_description,
-                    "tags": tags or Config.GHOST_CONFIG["default_tags"],
-                    "authors": [Config.GHOST_CONFIG["author_id"]]
+                    "tags": tags or Config.GHOST_CONFIG["default_tags"]
                 }]
             }
             
@@ -354,14 +353,13 @@ class GhostCMSTool(BaseTool):
             }
             
             # Make actual API call to Ghost CMS Admin API
-            # Note: This requires Admin API key, not Content API key
             api_url = f"{Config.GHOST_API_URL}/ghost/api/admin/posts/"
             
             # Debug information
             print(f"🔗 Ghost CMS API URL: {api_url}")
             print(f"🔑 Using API Key: {Config.GHOST_API_KEY[:10]}...")
             print(f"🔑 Generated JWT Token: {jwt_token[:20]}...")
-            print(f"🔗 Base URL from config: {Config.GHOST_API_URL}")
+            print(f"📝 Creating post: {title}")
             
             response = requests.post(
                 api_url,
@@ -418,102 +416,13 @@ class GhostCMSTool(BaseTool):
                 print(f"❌ Post data sent: {json.dumps(post_data, indent=2)}")
             
             return json.dumps(response_data, indent=2)
-            
+                
         except Exception as e:
-            return f"Error preparing Ghost CMS content: {str(e)}"
-    
-    def _html_to_markdown(self, html_content: str) -> str:
-        """Convert HTML content to Markdown"""
-        try:
-            from bs4 import BeautifulSoup
-            import re
-            
-            # Parse HTML
-            soup = BeautifulSoup(html_content, 'html.parser')
-            
-            # Remove HTML wrapper tags if present
-            article = soup.find('article')
-            if article:
-                content = article
-            else:
-                content = soup
-            
-            # Convert to Markdown
-            markdown = ""
-            
-            for element in content.find_all(['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'p', 'ul', 'ol', 'li', 'strong', 'em', 'code', 'pre', 'blockquote']):
-                if element.name in ['h1', 'h2', 'h3', 'h4', 'h5', 'h6']:
-                    level = int(element.name[1])
-                    markdown += f"{'#' * level} {element.get_text().strip()}\n\n"
-                elif element.name == 'p':
-                    text = element.get_text().strip()
-                    if text:
-                        markdown += f"{text}\n\n"
-                elif element.name == 'ul':
-                    for li in element.find_all('li'):
-                        markdown += f"- {li.get_text().strip()}\n"
-                    markdown += "\n"
-                elif element.name == 'ol':
-                    for i, li in enumerate(element.find_all('li'), 1):
-                        markdown += f"{i}. {li.get_text().strip()}\n"
-                    markdown += "\n"
-                elif element.name == 'li':
-                    # Handle nested lists
-                    text = element.get_text().strip()
-                    if text:
-                        markdown += f"- {text}\n"
-                elif element.name == 'strong':
-                    markdown += f"**{element.get_text().strip()}**"
-                elif element.name == 'em':
-                    markdown += f"*{element.get_text().strip()}*"
-                elif element.name == 'code':
-                    markdown += f"`{element.get_text().strip()}`"
-                elif element.name == 'pre':
-                    code_text = element.get_text().strip()
-                    markdown += f"```\n{code_text}\n```\n\n"
-                elif element.name == 'blockquote':
-                    quote_text = element.get_text().strip()
-                    markdown += f"> {quote_text}\n\n"
-            
-            # Clean up extra newlines
-            markdown = re.sub(r'\n{3,}', '\n\n', markdown)
-            return markdown.strip()
-            
-        except Exception as e:
-            # Fallback: return plain text
-            from bs4 import BeautifulSoup
-            soup = BeautifulSoup(html_content, 'html.parser')
-            return soup.get_text().strip()
-    
-    def _markdown_to_mobiledoc(self, markdown_content: str) -> dict:
-        """Convert Markdown to Ghost CMS Mobiledoc format"""
-        try:
-            # Simple Mobiledoc structure for Ghost CMS
-            # This is a basic implementation - Ghost will handle the conversion
-            # Convert markdown to simple HTML and then to mobiledoc
-            # For now, use a simple text-based mobiledoc
-            mobiledoc = {
-                "version": "0.3.1",
-                "markups": [],
-                "atoms": [],
-                "cards": [],
-                "sections": [
-                    [1, "p", [[0, [], 0, markdown_content]]]
-                ]
-            }
-            return mobiledoc
-            
-        except Exception as e:
-            # Fallback: return simple text mobiledoc
-            return {
-                "version": "0.3.1",
-                "markups": [],
-                "atoms": [],
-                "cards": [],
-                "sections": [
-                    [1, "p", [[0, [], 0, str(markdown_content)]]]
-                ]
-            }
+            print(f"❌ Error publishing to Ghost CMS: {str(e)}")
+            return json.dumps({
+                "status": "error",
+                "message": f"Error publishing to Ghost CMS: {str(e)}"
+            })
 
 class TagExtractionTool(BaseTool):
     name: str = "Tag Extraction"

@@ -37,7 +37,6 @@ class Config:
     # Ghost CMS Settings
     GHOST_CONFIG = {
         "publish_as_draft": True,
-        "author_id": os.getenv("GHOST_AUTHOR_ID", "1"),
         "default_tags": ["blog", "auto-generated"]  # Fallback tags if none generated
     }
     

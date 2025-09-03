@@ -166,11 +166,11 @@ class BlogTasks:
     
     def quality_review_task(self, topic: str):
         return Task(
-            description=f"""Conduct a comprehensive quality review of the technical article on "{topic}" before publication.
+            description=f"""Conduct a comprehensive quality review of the technical article on "{topic}" and return the final approved content ready for publication.
             
-            Review Criteria:
+            Review Process:
             
-            1. **Content Quality**
+            1. **Content Quality Review**
                - Verify technical accuracy and factual correctness
                - Check for logical flow and coherent structure
                - Ensure all sections contribute to the overall narrative
@@ -194,14 +194,15 @@ class BlogTasks:
                - Ensure proper formatting of technical elements
                - Validate accessibility considerations
             
-            5. **Publication Readiness**
-               - Confirm all sections are complete and polished
-               - Check for any placeholder content or missing elements
-               - Ensure content is ready for user review and approval
+            5. **Final Output**
+               - After reviewing, return the FINAL APPROVED CONTENT
+               - Include the complete article with proper formatting
+               - Ensure the content is ready for publication
+               - Do NOT return a review report - return the actual blog post content
             
-            Provide detailed feedback and recommendations for any improvements needed.""",
+            IMPORTANT: Your output should be the final approved blog post content, not a review or analysis. Return the complete article ready for publication.""",
             agent=self.agents.quality_reviewer_agent(),
-            expected_output="Comprehensive quality review report with approval status and any recommended improvements"
+            expected_output="Final approved blog post content ready for publication (not a review report)"
         )
     
     def ghost_publication_task(self, topic: str):

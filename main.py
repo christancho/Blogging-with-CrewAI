@@ -259,7 +259,68 @@ class BlogGenerationCrew:
             print(f"\n🎉 Blog post generation completed! (100%)")
             print(f"📄 Output saved to: {output_path}")
             
-            if user_approval:
+            # Auto-publish to Ghost CMS if no approval is required
+            if not user_approval:
+                print("\n🚀 Auto-publishing to Ghost CMS (--no-approval mode)...")
+                try:
+                    from tools import GhostCMSTool
+                    from config import Config
+                    
+                    # Extract content and metadata from the generated file
+                    with open(output_path, 'r', encoding='utf-8') as f:
+                        content = f.read()
+                    
+                    # Extract title from content (look for H1 tag or title in the content)
+                    import re
+                    from bs4 import BeautifulSoup
+                    
+                    # Try to find title in HTML content
+                    title_match = re.search(r'<h1[^>]*>(.*?)</h1>', content, re.IGNORECASE)
+                    if title_match:
+                        title = BeautifulSoup(title_match.group(1), 'html.parser').get_text().strip()
+                    else:
+                        # Fallback: use the topic as title
+                        title = topic
+                    
+                    # Extract meta description if available
+                    meta_desc_match = re.search(r'<meta name="description" content="([^"]*)"', content, re.IGNORECASE)
+                    if meta_desc_match:
+                        meta_description = meta_desc_match.group(1).strip()
+                    else:
+                        meta_description = f"Learn about {topic} with this comprehensive guide."
+                    
+                    # Extract tags if available
+                    tags_match = re.search(r'<meta name="keywords" content="([^"]*)"', content, re.IGNORECASE)
+                    if tags_match:
+                        tags = [tag.strip() for tag in tags_match.group(1).split(',')]
+                    else:
+                        tags = Config.GHOST_CONFIG["default_tags"]
+                    
+                    # Extract HTML content for publishing
+                    article_match = re.search(r'<article>(.*?)</article>', content, re.DOTALL)
+                    if article_match:
+                        html_content = article_match.group(1).strip()
+                    else:
+                        # Fallback: use the entire content
+                        html_content = content
+                    
+                    # Create Ghost CMS tool and publish
+                    ghost_tool = GhostCMSTool()
+                    result = ghost_tool._run(
+                        title=title,
+                        content=html_content,
+                        meta_description=meta_description,
+                        tags=tags
+                    )
+                    
+                    print("📝 Ghost CMS Publication Result:")
+                    print(result)
+                    
+                except Exception as e:
+                    print(f"❌ Error publishing to Ghost CMS: {str(e)}")
+                    print("📄 Content saved locally but not published to Ghost CMS")
+            
+            elif user_approval:
                 print(f"\n👀 FINAL DRAFT REVIEW:")
                 print("=" * 60)
                 print("📖 PREVIEW OF YOUR BLOG POST:")
