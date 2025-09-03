@@ -1,10 +1,40 @@
 import requests
 import json
 import re
+import jwt
+import datetime
+from urllib.parse import urlparse
 from typing import Dict, List, Optional, Union
 from bs4 import BeautifulSoup
 from crewai.tools import BaseTool
 from config import Config
+
+def generate_ghost_jwt(api_key: str, api_url: str) -> str:
+    """Generate JWT token for Ghost Admin API"""
+    try:
+        # Split the API key (format: key_id:key_secret)
+        key_id, key_secret = api_key.split(':')
+        
+        # Parse the API URL to get the audience
+        parsed_url = urlparse(api_url)
+        audience = f"{parsed_url.scheme}://{parsed_url.netloc}"
+        
+        # Create JWT payload
+        iat = datetime.datetime.utcnow()
+        exp = iat + datetime.timedelta(minutes=5)  # Token expires in 5 minutes
+        
+        payload = {
+            'iat': int(iat.timestamp()),
+            'exp': int(exp.timestamp()),
+            'aud': f"{audience}/ghost/api/admin/"
+        }
+        
+        # Generate JWT token
+        token = jwt.encode(payload, bytes.fromhex(key_secret), algorithm='HS256', headers={'kid': key_id})
+        return token
+    except Exception as e:
+        print(f"⚠️ JWT generation error: {e}")
+        return None
 
 class BraveSearchTool(BaseTool):
     name: str = "Brave Search"
@@ -296,7 +326,13 @@ class GhostCMSTool(BaseTool):
     def _run(self, title: str, content: str, meta_description: str = "", tags: List[str] = None) -> str:
         """Publish content to Ghost CMS as draft"""
         try:
-            # Ghost CMS credentials are now mandatory, so this should always be configured
+            # Generate JWT token for Ghost Admin API
+            jwt_token = generate_ghost_jwt(Config.GHOST_API_KEY, Config.GHOST_API_URL)
+            if not jwt_token:
+                return json.dumps({
+                    "status": "error",
+                    "message": "Failed to generate JWT token for Ghost CMS authentication"
+                })
             
             # Prepare the post data following official Ghost CMS API format
             post_data = {
@@ -313,7 +349,7 @@ class GhostCMSTool(BaseTool):
             }
             
             headers = {
-                "Authorization": f"Ghost {Config.GHOST_API_KEY}",
+                "Authorization": f"Ghost {jwt_token}",
                 "Content-Type": "application/json"
             }
             
@@ -324,6 +360,7 @@ class GhostCMSTool(BaseTool):
             # Debug information
             print(f"🔗 Ghost CMS API URL: {api_url}")
             print(f"🔑 Using API Key: {Config.GHOST_API_KEY[:10]}...")
+            print(f"🔑 Generated JWT Token: {jwt_token[:20]}...")
             print(f"🔗 Base URL from config: {Config.GHOST_API_URL}")
             
             response = requests.post(
