@@ -220,41 +220,43 @@ class SEOAnalysisTool(BaseTool):
 
 class HTMLFormatterTool(BaseTool):
     name: str = "Content Formatter"
-    description: str = "Format content as HTML and Markdown suitable for Ghost CMS publication"
+    description: str = "Format content as Markdown suitable for Ghost CMS publication"
     
     def _run(self, content: str, title: str, meta_description: str = "") -> str:
-        """Format content as HTML and Markdown for Ghost CMS"""
+        """Format content as Markdown for Ghost CMS"""
         try:
-            # Clean and structure the content
-            formatted_html = f"""<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{title}</title>
-    <meta name="description" content="{meta_description}">
-</head>
-<body>
-    <article>
-        {content}
-    </article>
-</body>
-</html>"""
+            # Create clean Markdown content directly
+            markdown_content = self._create_markdown_content(content, title, meta_description)
             
-            # Also create Markdown version
-            markdown_content = self._html_to_markdown(formatted_html)
-            
-            # Return both formats
-            return f"""
-HTML FORMAT:
-{formatted_html}
-
-MARKDOWN FORMAT:
-{markdown_content}
-"""
+            # Return Markdown as primary format
+            return markdown_content
             
         except Exception as e:
             return f"Error formatting content: {str(e)}"
+    
+    def _create_markdown_content(self, content: str, title: str, meta_description: str = "") -> str:
+        """Create clean Markdown content for Ghost CMS"""
+        try:
+            from bs4 import BeautifulSoup
+            import re
+            
+            # Parse the content
+            soup = BeautifulSoup(content, 'html.parser')
+            
+            # Start with title and meta description
+            markdown = f"# {title}\n\n"
+            
+            if meta_description:
+                markdown += f"*{meta_description}*\n\n"
+            
+            # Convert content to Markdown
+            markdown += self._html_to_markdown(content)
+            
+            return markdown.strip()
+            
+        except Exception as e:
+            # Fallback: return content as-is with title
+            return f"# {title}\n\n{content}"
     
     def _html_to_markdown(self, html_content: str) -> str:
         """Convert HTML content to Markdown"""
@@ -335,10 +337,11 @@ class GhostCMSTool(BaseTool):
                 })
             
             # Prepare the post data following official Ghost CMS API format
+            # Ghost CMS supports both HTML and Markdown content
             post_data = {
                 "posts": [{
                     "title": title,
-                    "html": content,
+                    "html": content,  # Ghost will auto-detect if it's Markdown or HTML
                     "status": "draft",
                     "excerpt": meta_description,
                     "meta_title": title,

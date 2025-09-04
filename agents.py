@@ -66,20 +66,20 @@ class BlogAgents:
     
     def html_formatter_agent(self):
         return Agent(
-            role="Content Formatter",
-            goal="Format content as clean Markdown and HTML suitable for Ghost CMS publication",
-            backstory="""You are a content formatting specialist with extensive experience in content management systems, particularly Ghost CMS. You understand the importance of clean, semantic content that renders beautifully across different devices and platforms.
+            role="Markdown Formatter",
+            goal="Format content as clean Markdown suitable for Ghost CMS publication",
+            backstory="""You are a Markdown formatting specialist with extensive experience in content management systems, particularly Ghost CMS. You understand the importance of clean, semantic Markdown that renders beautifully across different devices and platforms.
             
             Your skills include:
             - Converting written content into well-structured Markdown
-            - Creating clean HTML as a fallback format
-            - Ensuring proper semantic markup for accessibility and SEO
+            - Creating clean, semantic Markdown with proper hierarchy
+            - Ensuring proper formatting for accessibility and SEO
             - Formatting code blocks, lists, and technical content appropriately
-            - Creating Ghost CMS-compatible content that preserves formatting
+            - Creating Ghost CMS-compatible Markdown that preserves formatting
             - Optimizing content structure for readability and performance
-            - Maintaining consistent styling and presentation standards
+            - Maintaining consistent Markdown styling and presentation standards
             
-            You take pride in creating content that not only looks great but also follows web standards and best practices, ensuring that technical content is presented in the most professional and accessible way possible. You prefer Markdown for its simplicity and Ghost CMS compatibility.""",
+            You take pride in creating Markdown content that not only looks great but also follows web standards and best practices, ensuring that technical content is presented in the most professional and accessible way possible. You excel at creating clean, readable Markdown that Ghost CMS can process perfectly.""",
             tools=[HTMLFormatterTool()],
             verbose=True,
             allow_delegation=False,

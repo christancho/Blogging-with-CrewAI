@@ -125,7 +125,7 @@ class BlogTasks:
     
     def html_formatting_task(self):
         return Task(
-            description="""Convert the SEO-optimized content into clean Markdown and HTML suitable for Ghost CMS publication.
+            description="""Convert the SEO-optimized content into clean Markdown suitable for Ghost CMS publication.
             
             Content Formatting Requirements:
             1. **Markdown Format (Primary)**
@@ -134,34 +134,29 @@ class BlogTasks:
                - Format lists, code blocks, and emphasis correctly
                - Ensure Ghost CMS compatibility
             
-            2. **HTML Format (Fallback)**
-               - Create clean, semantic HTML5 structure
-               - Implement correct heading hierarchy (H1, H2, H3)
-               - Use appropriate tags for different content types
-            
-            3. **Ghost CMS Compatibility**
+            2. **Ghost CMS Compatibility**
                - Format content for Ghost CMS editor
-               - Use Ghost-compatible structure
+               - Use Ghost-compatible Markdown structure
                - Ensure proper paragraph and section formatting
             
-            4. **Technical Content Formatting**
-               - Format code blocks with proper syntax
+            3. **Technical Content Formatting**
+               - Format code blocks with proper syntax highlighting
                - Use appropriate formatting for technical terms
                - Ensure lists and tables are properly structured
             
-            5. **SEO Elements**
-               - Include meta title and description
+            4. **SEO Elements**
+               - Include title as H1 heading
+               - Include meta description as italicized text after title
                - Ensure proper header structure is maintained
-               - Add schema markup hints where appropriate
             
-            6. **Accessibility**
-               - Include alt text placeholders for images
-               - Ensure proper semantic structure
+            5. **Accessibility**
                - Use descriptive link text
+               - Ensure proper semantic structure
+               - Format content for screen readers
             
-            The output should be clean Markdown (preferred) and HTML (fallback) that can be directly imported into Ghost CMS.""",
+            The output should be clean Markdown that can be directly imported into Ghost CMS.""",
             agent=self.agents.html_formatter_agent(),
-            expected_output="Clean Markdown and HTML formatted for Ghost CMS with proper structure and SEO elements"
+            expected_output="Clean Markdown formatted for Ghost CMS with proper structure and SEO elements"
         )
     
     def quality_review_task(self, topic: str):
