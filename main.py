@@ -270,9 +270,9 @@ class BlogGenerationCrew:
             return {
                 'final_result': results[-1] if results else None,
                 'task_results': results,
-                'html_content': results[3] if len(results) > 3 else None,  # HTML formatter task (4th task, index 3)
-                'seo_content': results[2] if len(results) > 2 else None,   # SEO task (3rd task, index 2)
-                'content': results[1] if len(results) > 1 else None        # Content task (2nd task, index 1)
+                'markup_content': results[3] if len(results) > 3 else None,  # Markdown formatter task (4th task, index 3)
+                'seo_content': results[2] if len(results) > 2 else None,     # SEO task (3rd task, index 2)
+                'content': results[1] if len(results) > 1 else None          # Content task (2nd task, index 1)
             }
             
         except Exception as e:
@@ -373,12 +373,12 @@ class BlogGenerationCrew:
             
             # Extract the final result and individual task results
             final_result = crew_results['final_result']
-            html_content = crew_results['html_content']
+            markup_content = crew_results['markup_content']
             seo_content = crew_results['seo_content']
             content = crew_results['content']
             
             # Save the final result (for backup/debugging)
-            output_filename = f"blog_post_{timestamp}_{topic.replace(' ', '_').replace('/', '_')}.html"
+            output_filename = f"blog_post_{timestamp}_{topic.replace(' ', '_').replace('/', '_')}.md"
             output_path = os.path.join(self.output_dir, output_filename)
             
             with open(output_path, 'w', encoding='utf-8') as f:
@@ -396,10 +396,10 @@ class BlogGenerationCrew:
                     import re
                     from bs4 import BeautifulSoup
                     
-                    # Use the Markdown content directly from the HTML formatter task
-                    if html_content:
-                        print("✅ Using Markdown content from HTML formatter task")
-                        blog_markdown_content = str(html_content)
+                    # Use the Markdown content directly from the Markdown formatter task
+                    if markup_content:
+                        print("✅ Using Markdown content from Markdown formatter task")
+                        blog_markdown_content = str(markup_content)
                     else:
                         print("⚠️ No Markdown content from formatter, falling back to content task")
                         blog_markdown_content = str(content) if content else str(final_result)
