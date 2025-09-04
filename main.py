@@ -210,6 +210,125 @@ class ProgressTracker:
         """Get current progress percentage"""
         return int((self.current_step / self.total_steps) * 100)
 
+def extract_blog_metadata(markup_content, seo_content, topic):
+    """Extract title, meta description, and tags from content"""
+    import re
+    from bs4 import BeautifulSoup
+    
+    # Extract title from Markdown content (look for # title)
+    title_match = re.search(r'^#\s+(.+)$', str(markup_content), re.MULTILINE)
+    if title_match:
+        title = title_match.group(1).strip()
+    else:
+        title = topic
+    
+    # Extract meta description from SEO content or Markdown content
+    meta_description = f"Learn about {topic} with this comprehensive guide."
+    if seo_content:
+        seo_str = str(seo_content)
+        meta_desc_match = re.search(r'Meta description[:\s]*(.*?)(?:\n|$)', seo_str, re.IGNORECASE | re.DOTALL)
+        if meta_desc_match:
+            meta_description = meta_desc_match.group(1).strip()
+    
+    # Try to extract from Markdown content as fallback
+    if meta_description == f"Learn about {topic} with this comprehensive guide.":
+        meta_desc_match = re.search(r'^#\s+.+\n\n\*\s*(.+?)\s*\*', str(markup_content), re.MULTILINE | re.DOTALL)
+        if meta_desc_match:
+            meta_description = meta_desc_match.group(1).strip()
+    
+    # Extract tags from SEO content or use defaults
+    from config import Config
+    tags = Config.GHOST_CONFIG["default_tags"]
+    if seo_content:
+        seo_str = str(seo_content)
+        tags_match = re.search(r'Tags[:\s]*(.*?)(?:\n|$)', seo_str, re.IGNORECASE | re.DOTALL)
+        if tags_match:
+            tags_text = tags_match.group(1).strip()
+            tags = [tag.strip() for tag in tags_text.split(',') if tag.strip()]
+    
+    return title, meta_description, tags
+
+def clean_markdown_content(markup_content):
+    """Clean up Markdown content for publishing"""
+    import re
+    
+    # Remove meta description line if it exists (italicized line after title)
+    clean_content = re.sub(r'^#\s+.+\n\n\*\s*.+?\s*\*\n\n', r'# \1\n\n', str(markup_content), flags=re.MULTILINE | re.DOTALL)
+    return clean_content.strip()
+
+def show_content_preview(markup_content, title, meta_description, tags):
+    """Display a preview of the blog content"""
+    print(f"\n👀 FINAL DRAFT REVIEW:")
+    print("=" * 60)
+    print("📖 PREVIEW OF YOUR BLOG POST:")
+    print("=" * 60)
+    print(f"📝 Title: {title}")
+    print(f"📝 Meta Description: {meta_description[:100]}...")
+    print(f"📝 Tags: {', '.join(tags)}")
+    print(f"📝 Content Length: {len(str(markup_content))} characters")
+    print("\n" + "=" * 60)
+    print("📄 CONTENT PREVIEW:")
+    print("=" * 60)
+    
+    # Show first 2000 characters of content
+    content_preview = str(markup_content)[:2000]
+    print(content_preview)
+    
+    if len(str(markup_content)) > 2000:
+        print("\n... (content truncated for preview)")
+    
+    print("\n" + "=" * 60)
+
+def publish_to_ghost(title, content, meta_description, tags):
+    """Publish content to Ghost CMS"""
+    from tools import GhostCMSTool
+    import json
+    
+    print("\n🚀 Publishing to Ghost CMS...")
+    
+    try:
+        ghost_tool = GhostCMSTool()
+        result = ghost_tool._run(
+            title=title,
+            content=content,
+            meta_description=meta_description,
+            tags=tags
+        )
+        
+        print("📝 Ghost CMS Publication Result:")
+        print(result)
+        
+        # Parse the result to get post ID for validation
+        try:
+            result_data = json.loads(result)
+            if result_data.get("status") == "success":
+                post_id = result_data.get("post_id")
+                print(f"\n🔍 Validating published post (ID: {post_id})...")
+                
+                # Validate the published post by reading it back
+                validation_result = validate_ghost_post(post_id, title, content)
+                if validation_result["valid"]:
+                    print("✅ Post validation successful!")
+                    print(f"📊 Content length: {validation_result['content_length']} characters ({validation_result.get('content_type', 'Unknown')})")
+                    print(f"📊 Title match: {validation_result['title_match']}")
+                    print(f"📊 Post status: {validation_result['post_status']}")
+                else:
+                    print("⚠️ Post validation failed:")
+                    for issue in validation_result["issues"]:
+                        print(f"   - {issue}")
+                    print(f"📊 Content found: {validation_result['content_length']} characters ({validation_result.get('content_type', 'Unknown')})")
+            else:
+                print(f"❌ Publication failed: {result_data.get('message', 'Unknown error')}")
+        except json.JSONDecodeError:
+            print("⚠️ Could not parse Ghost CMS response for validation")
+        
+        return True
+        
+    except Exception as e:
+        print(f"❌ Error publishing to Ghost CMS: {str(e)}")
+        print("📄 Content saved locally but not published to Ghost CMS")
+        return False
+
 class BlogGenerationCrew:
     """Main orchestrator for the blog generation crew"""
     
@@ -387,232 +506,40 @@ class BlogGenerationCrew:
             print(f"\n🎉 Blog post generation completed! (100%)")
             print(f"📄 Output saved to: {output_path}")
             
-            # Auto-publish to Ghost CMS if no approval is required
+            # Extract metadata and prepare content for publishing
+            if markup_content:
+                print("✅ Using Markdown content from Markdown formatter task")
+                blog_content = str(markup_content)
+            else:
+                print("⚠️ No Markdown content from formatter, falling back to content task")
+                blog_content = str(content) if content else str(final_result)
+            
+            # Extract metadata using helper function
+            title, meta_description, tags = extract_blog_metadata(markup_content, seo_content, topic)
+            
+            # Clean up content for publishing
+            clean_content = clean_markdown_content(blog_content)
+            
+            # Always show preview
+            show_content_preview(clean_content, title, meta_description, tags)
+            
+            # Handle publishing based on user approval setting
             if not user_approval:
                 print("\n🚀 Auto-publishing to Ghost CMS (--no-approval mode)...")
-                try:
-                    from tools import GhostCMSTool
-                    from config import Config
-                    import re
-                    from bs4 import BeautifulSoup
-                    
-                    # Use the Markdown content directly from the Markdown formatter task
-                    if markup_content:
-                        print("✅ Using Markdown content from Markdown formatter task")
-                        blog_markdown_content = str(markup_content)
-                    else:
-                        print("⚠️ No Markdown content from formatter, falling back to content task")
-                        blog_markdown_content = str(content) if content else str(final_result)
-                    
-                    # Extract title from Markdown content (look for # title)
-                    title_match = re.search(r'^#\s+(.+)$', blog_markdown_content, re.MULTILINE)
-                    if title_match:
-                        title = title_match.group(1).strip()
-                    else:
-                        # Fallback: use the topic as title
-                        title = topic
-                    
-                    # Extract meta description from SEO content or Markdown content
-                    meta_description = f"Learn about {topic} with this comprehensive guide."
-                    if seo_content:
-                        # Try to extract meta description from SEO task result
-                        seo_str = str(seo_content)
-                        meta_desc_match = re.search(r'Meta description[:\s]*(.*?)(?:\n|$)', seo_str, re.IGNORECASE | re.DOTALL)
-                        if meta_desc_match:
-                            meta_description = meta_desc_match.group(1).strip()
-                    
-                    # Try to extract from Markdown content as fallback (look for italicized description after title)
-                    if meta_description == f"Learn about {topic} with this comprehensive guide.":
-                        meta_desc_match = re.search(r'^#\s+.+\n\n\*\s*(.+?)\s*\*', blog_markdown_content, re.MULTILINE | re.DOTALL)
-                        if meta_desc_match:
-                            meta_description = meta_desc_match.group(1).strip()
-                    
-                    # Extract tags from SEO content or use defaults
-                    tags = Config.GHOST_CONFIG["default_tags"]
-                    if seo_content:
-                        # Try to extract tags from SEO task result
-                        seo_str = str(seo_content)
-                        tags_match = re.search(r'Tags[:\s]*(.*?)(?:\n|$)', seo_str, re.IGNORECASE | re.DOTALL)
-                        if tags_match:
-                            tags_text = tags_match.group(1).strip()
-                            tags = [tag.strip() for tag in tags_text.split(',') if tag.strip()]
-                    
-                    # Clean up the Markdown content for publishing
-                    # Remove meta description line if it exists (italicized line after title)
-                    clean_markdown_content = re.sub(r'^#\s+.+\n\n\*\s*.+?\s*\*\n\n', r'# \1\n\n', blog_markdown_content, flags=re.MULTILINE | re.DOTALL)
-                    clean_markdown_content = clean_markdown_content.strip()
-                    
-                    # Debug information
-                    print(f"📝 Extracted Title: {title}")
-                    print(f"📝 Extracted Meta Description: {meta_description[:100]}...")
-                    print(f"📝 Extracted Tags: {tags}")
-                    print(f"📝 Content Length: {len(clean_markdown_content)} characters")
-                    print(f"📝 Content Preview: {clean_markdown_content[:200]}...")
-                    
-                    # Create Ghost CMS tool and publish
-                    ghost_tool = GhostCMSTool()
-                    result = ghost_tool._run(
-                        title=title,
-                        content=clean_markdown_content,
-                        meta_description=meta_description,
-                        tags=tags
-                    )
-                    
-                    print("📝 Ghost CMS Publication Result:")
-                    print(result)
-                    
-                    # Parse the result to get post ID for validation
-                    try:
-                        import json
-                        result_data = json.loads(result)
-                        if result_data.get("status") == "success":
-                            post_id = result_data.get("post_id")
-                            print(f"\n🔍 Validating published post (ID: {post_id})...")
-                            
-                            # Validate the published post by reading it back
-                            validation_result = validate_ghost_post(post_id, title, clean_markdown_content)
-                            if validation_result["valid"]:
-                                print("✅ Post validation successful!")
-                                print(f"📊 Content length: {validation_result['content_length']} characters ({validation_result.get('content_type', 'Unknown')})")
-                                print(f"📊 Title match: {validation_result['title_match']}")
-                                print(f"📊 Post status: {validation_result['post_status']}")
-                            else:
-                                print("⚠️ Post validation failed:")
-                                for issue in validation_result["issues"]:
-                                    print(f"   - {issue}")
-                                print(f"📊 Content found: {validation_result['content_length']} characters ({validation_result.get('content_type', 'Unknown')})")
-                    except json.JSONDecodeError:
-                        print("⚠️ Could not parse Ghost CMS response for validation")
-                    
-                except Exception as e:
-                    print(f"❌ Error publishing to Ghost CMS: {str(e)}")
-                    print("📄 Content saved locally but not published to Ghost CMS")
+                publish_to_ghost(title, clean_content, meta_description, tags)
             
-            elif user_approval:
-                print(f"\n👀 FINAL DRAFT REVIEW:")
-                print("=" * 60)
-                print("📖 PREVIEW OF YOUR BLOG POST:")
-                print("=" * 60)
-                
-                # Display the final draft content
-                try:
-                    with open(output_path, 'r', encoding='utf-8') as f:
-                        content = f.read()
-                        
-                        # Try to extract content from different possible formats
-                        import re
-                        from bs4 import BeautifulSoup
-                        
-                        # First, try to find content between <article> tags (original format)
-                        article_match = re.search(r'<article>(.*?)</article>', content, re.DOTALL)
-                        if article_match:
-                            article_content = article_match.group(1)
-                            soup = BeautifulSoup(article_content, 'html.parser')
-                            preview_text = soup.get_text()[:2000]
-                        else:
-                            # Try to find HTML content after "-- Full content (HTML, ready for Ghost CMS import) --"
-                            html_section = re.search(r'-- Full content \(HTML, ready for Ghost CMS import\) --(.*?)(?=\n\n|\Z)', content, re.DOTALL)
-                            if html_section:
-                                html_content = html_section.group(1).strip()
-                                soup = BeautifulSoup(html_content, 'html.parser')
-                                preview_text = soup.get_text()[:2000]
-                            else:
-                                # Fallback: try to extract any HTML content
-                                soup = BeautifulSoup(content, 'html.parser')
-                                preview_text = soup.get_text()[:2000]
-                        
-                        if preview_text.strip():
-                            print(preview_text)
-                            if len(soup.get_text()) > 2000:
-                                print("\n... (content truncated for preview)")
-                        else:
-                            print("Content preview not available - no readable content found")
-                            
-                except Exception as e:
-                    print(f"Could not preview content: {e}")
-                    print("Raw content preview:")
-                    try:
-                        with open(output_path, 'r', encoding='utf-8') as f:
-                            raw_content = f.read()
-                            print(raw_content[:1000] + "..." if len(raw_content) > 1000 else raw_content)
-                    except:
-                        print("Could not read file for preview")
-                
-                print("=" * 60)
-                print(f"📁 Full content available at: {output_path}")
-                print("=" * 60)
+            else:
+                # User approval required - ask for confirmation
+                print(f"\n📁 Full content available at: {output_path}")
                 
                 # Ask for user approval
                 approval = input("\nDo you approve this content for publication to Ghost CMS? (y/n): ").lower().strip()
                 
                 if approval == 'y' or approval == 'yes':
                     print("✅ Content approved! Publishing to Ghost CMS...")
-                    
-                    # Actually publish to Ghost CMS
-                    try:
-                        from tools import GhostCMSTool
-                        from config import Config
-                        
-                        # Extract content and metadata from the generated file
-                        with open(output_path, 'r', encoding='utf-8') as f:
-                            content = f.read()
-                        
-                        # Extract title from content (look for H1 tag or title in the content)
-                        import re
-                        from bs4 import BeautifulSoup
-                        
-                        # Try to find title in HTML content
-                        title_match = re.search(r'<h1[^>]*>(.*?)</h1>', content, re.IGNORECASE)
-                        if title_match:
-                            title = BeautifulSoup(title_match.group(1), 'html.parser').get_text().strip()
-                        else:
-                            # Fallback: use the topic as title
-                            title = topic
-                        
-                        # Extract meta description if available
-                        meta_desc_match = re.search(r'Meta description:\s*(.+?)(?:\n|$)', content)
-                        meta_description = meta_desc_match.group(1).strip() if meta_desc_match else ""
-                        
-                        # Extract tags if available
-                        tags_match = re.search(r'Tags:\s*(\[.*?\])', content)
-                        tags = []
-                        if tags_match:
-                            try:
-                                import json
-                                tags = json.loads(tags_match.group(1))
-                            except:
-                                tags = Config.GHOST_CONFIG["default_tags"]
-                        else:
-                            tags = Config.GHOST_CONFIG["default_tags"]
-                        
-                        # Extract HTML content for publishing
-                        html_section = re.search(r'-- Full content \(HTML, ready for Ghost CMS import\) --(.*?)(?=\n\n|\Z)', content, re.DOTALL)
-                        if html_section:
-                            html_content = html_section.group(1).strip()
-                        else:
-                            # Fallback: use the entire content
-                            html_content = content
-                        
-                        # Create Ghost CMS tool and publish
-                        ghost_tool = GhostCMSTool()
-                        result = ghost_tool._run(
-                            title=title,
-                            content=html_content,
-                            meta_description=meta_description,
-                            tags=tags
-                        )
-                        
-                        print("📝 Ghost CMS Publication Result:")
-                        print(result)
-                        
-                    except Exception as e:
-                        print(f"❌ Error publishing to Ghost CMS: {str(e)}")
-                        print("📄 Content saved locally but not published to Ghost CMS")
-                    
-                    return output_path
+                    publish_to_ghost(title, clean_content, meta_description, tags)
                 else:
                     print("❌ Content not approved. Please review and make necessary changes.")
-                    return output_path
             
             return output_path
             
@@ -626,7 +553,7 @@ class BlogGenerationCrew:
             print("No output directory found. No posts have been generated yet.")
             return
         
-        files = [f for f in os.listdir(self.output_dir) if f.endswith('.html')]
+        files = [f for f in os.listdir(self.output_dir) if f.endswith('.md')]
         
         if not files:
             print("No blog posts found in the output directory.")
@@ -637,7 +564,7 @@ class BlogGenerationCrew:
         
         for i, filename in enumerate(sorted(files, reverse=True), 1):
             # Extract info from filename
-            parts = filename.replace('.html', '').split('_')
+            parts = filename.replace('.md', '').split('_')
             if len(parts) >= 3:
                 date_part = parts[2]
                 time_part = parts[3] if len(parts) > 3 else ""
