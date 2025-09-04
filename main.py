@@ -254,7 +254,8 @@ def clean_markdown_content(markup_content):
     import re
     
     # Remove meta description line if it exists (italicized line after title)
-    clean_content = re.sub(r'^#\s+.+\n\n\*\s*.+?\s*\*\n\n', r'# \1\n\n', str(markup_content), flags=re.MULTILINE | re.DOTALL)
+    # Pattern: # title\n\n*description*\n\n -> # title\n\n
+    clean_content = re.sub(r'^#\s+(.+)\n\n\*\s*.+?\s*\*\n\n', r'# \1\n\n', str(markup_content), flags=re.MULTILINE | re.DOTALL)
     return clean_content.strip()
 
 def show_content_preview(markup_content, title, meta_description, tags):
