@@ -662,7 +662,7 @@ class BlogGenerationCrew:
             return None
     
     def list_generated_posts(self):
-        """List all previously generated blog posts"""
+        """List all previously generated blog posts with interactive menu"""
         if not os.path.exists(self.output_dir):
             print("No output directory found. No posts have been generated yet.")
             return
@@ -673,28 +673,222 @@ class BlogGenerationCrew:
             print("No blog posts found in the output directory.")
             return
         
-        print(f"\n📚 Generated Blog Posts ({len(files)} found):")
+        while True:
+            print(f"\n📚 Generated Blog Posts ({len(files)} found):")
+            print("=" * SEPARATOR_LENGTH)
+            
+            for i, filename in enumerate(sorted(files, reverse=True), 1):
+                # Extract info from filename
+                parts = filename.replace(OUTPUT_FILE_EXTENSION, '').split('_')
+                if len(parts) >= 3:
+                    date_part = parts[2]
+                    time_part = parts[3] if len(parts) > 3 else ""
+                    topic_part = '_'.join(parts[4:]) if len(parts) > 4 else "unknown_topic"
+                    
+                    # Format date
+                    try:
+                        date_obj = datetime.strptime(date_part, "%Y%m%d")
+                        formatted_date = date_obj.strftime("%Y-%m-%d")
+                    except:
+                        formatted_date = date_part
+                    
+                    print(f"{i:2d}. {topic_part.replace('_', ' ').title()}")
+                    print(f"    📅 Generated: {formatted_date}")
+                    print(f"    📁 File: {filename}")
+                    print()
+            
+            print("=" * SEPARATOR_LENGTH)
+            print("Options:")
+            print("1. View post details")
+            print("2. Delete post")
+            print("3. Exit")
+            
+            choice = input("\nSelect an option (1-3): ").strip()
+            
+            if choice == "1":
+                self._view_post_menu(files)
+            elif choice == "2":
+                self._delete_post_menu(files)
+                # Refresh files list after deletion
+                files = [f for f in os.listdir(self.output_dir) if f.endswith(OUTPUT_FILE_EXTENSION)]
+                if not files:
+                    print("No more posts available.")
+                    break
+            elif choice == "3":
+                print("👋 Goodbye!")
+                break
+            else:
+                print("❌ Invalid option. Please select 1, 2, or 3.")
+    
+    def _view_post_menu(self, files):
+        """Show post view menu"""
+        while True:
+            try:
+                post_num = input(f"\nEnter post number to view (1-{len(files)}): ").strip()
+                post_index = int(post_num) - 1
+                
+                if 0 <= post_index < len(files):
+                    filename = sorted(files, reverse=True)[post_index]
+                    self._view_post_details(filename)
+                    break
+                else:
+                    print(f"❌ Please enter a number between 1 and {len(files)}")
+            except ValueError:
+                print("❌ Please enter a valid number")
+    
+    def _view_post_details(self, filename):
+        """View post details and show action menu"""
+        file_path = os.path.join(self.output_dir, filename)
+        
+        if not os.path.exists(file_path):
+            print(f"❌ File not found: {filename}")
+            return
+        
+        print(f"\n📄 Post Details: {filename}")
         print("=" * SEPARATOR_LENGTH)
         
-        for i, filename in enumerate(sorted(files, reverse=True), 1):
-            # Extract info from filename
-            parts = filename.replace(OUTPUT_FILE_EXTENSION, '').split('_')
-            if len(parts) >= 3:
-                date_part = parts[2]
-                time_part = parts[3] if len(parts) > 3 else ""
-                topic_part = '_'.join(parts[4:]) if len(parts) > 4 else "unknown_topic"
+        try:
+            from config import Config
+            # Extract content and metadata
+            content_data = extract_content_from_file(file_path)
+            
+            # Show preview
+            show_content_preview(
+                content_data['content'],
+                content_data['title'],
+                content_data['meta_description'],
+                Config.GHOST_CONFIG["default_tags"]
+            )
+            
+            # Show action menu
+            while True:
+                print("\n" + "=" * SEPARATOR_LENGTH)
+                print("Actions:")
+                print("1. Post to Ghost CMS")
+                print("2. Back to list")
                 
-                # Format date
-                try:
-                    date_obj = datetime.strptime(date_part, "%Y%m%d")
-                    formatted_date = date_obj.strftime("%Y-%m-%d")
-                except:
-                    formatted_date = date_part
+                action = input("\nSelect an action (1-2): ").strip()
                 
-                print(f"{i:2d}. {topic_part.replace('_', ' ').title()}")
-                print(f"    📅 Generated: {formatted_date}")
-                print(f"    📁 File: {filename}")
-                print()
+                if action == "1":
+                    self._publish_post_to_ghost(filename, content_data)
+                    break
+                elif action == "2":
+                    break
+                else:
+                    print("❌ Invalid option. Please select 1 or 2.")
+                    
+        except Exception as e:
+            print(f"❌ Error viewing post: {str(e)}")
+    
+    def _publish_post_to_ghost(self, filename, content_data):
+        """Publish post to Ghost CMS"""
+        print("🚀 Publishing to Ghost CMS...")
+        
+        try:
+            from config import Config
+            success = publish_to_ghost(
+                title=content_data['title'],
+                content=content_data['content'],
+                meta_description=content_data['meta_description'],
+                tags=Config.GHOST_CONFIG["default_tags"]
+            )
+            
+            if success:
+                print("✅ Successfully published to Ghost CMS!")
+            else:
+                print("❌ Failed to publish to Ghost CMS")
+        except Exception as e:
+            print(f"❌ Error publishing to Ghost CMS: {str(e)}")
+    
+    def _delete_post_menu(self, files):
+        """Show post deletion menu"""
+        while True:
+            try:
+                post_num = input(f"\nEnter post number to delete (1-{len(files)}): ").strip()
+                post_index = int(post_num) - 1
+                
+                if 0 <= post_index < len(files):
+                    filename = sorted(files, reverse=True)[post_index]
+                    self._delete_post(filename)
+                    break
+                else:
+                    print(f"❌ Please enter a number between 1 and {len(files)}")
+            except ValueError:
+                print("❌ Please enter a valid number")
+    
+    def _delete_post(self, filename):
+        """Delete a post file"""
+        file_path = os.path.join(self.output_dir, filename)
+        
+        if not os.path.exists(file_path):
+            print(f"❌ File not found: {filename}")
+            return
+        
+        # Show confirmation
+        print(f"\n⚠️  Are you sure you want to delete: {filename}")
+        confirmation = input("Type 'DELETE' to confirm: ").strip()
+        
+        if confirmation == "DELETE":
+            try:
+                os.remove(file_path)
+                print(f"✅ Successfully deleted: {filename}")
+            except Exception as e:
+                print(f"❌ Error deleting file: {str(e)}")
+        else:
+            print("❌ Deletion cancelled")
+
+    def publish_existing_post(self, filename: str):
+        """Publish an existing blog post to Ghost CMS"""
+        # Ensure filename has the correct extension
+        if not filename.endswith(OUTPUT_FILE_EXTENSION):
+            filename += OUTPUT_FILE_EXTENSION
+        
+        file_path = os.path.join(self.output_dir, filename)
+        
+        if not os.path.exists(file_path):
+            print(f"❌ File not found: {filename}")
+            print(f"💡 Use --list to see available posts")
+            return
+        
+        print(f"📄 Publishing existing post: {filename}")
+        print("=" * SEPARATOR_LENGTH)
+        
+        try:
+            # Extract content and metadata using helper function
+            content_data = extract_content_from_file(file_path)
+            
+            # Show preview
+            from config import Config
+            show_content_preview(
+                content_data['content'],
+                content_data['title'],
+                content_data['meta_description'],
+                Config.GHOST_CONFIG["default_tags"]
+            )
+            
+            # Ask for confirmation
+            confirmation = input("\n🤔 Do you want to publish this post to Ghost CMS? (y/n): ").lower().strip()
+            
+            if confirmation in ['y', 'yes']:
+                print("🚀 Publishing to Ghost CMS...")
+                
+                # Publish to Ghost CMS using helper function
+                success = publish_to_ghost(
+                    title=content_data['title'],
+                    content=content_data['content'],
+                    meta_description=content_data['meta_description'],
+                    tags=Config.GHOST_CONFIG["default_tags"]
+                )
+                
+                if success:
+                    print("✅ Successfully published to Ghost CMS!")
+                else:
+                    print("❌ Failed to publish to Ghost CMS")
+            else:
+                print("❌ Publication cancelled")
+                
+        except Exception as e:
+            print(f"❌ Error publishing post: {str(e)}")
 
 def main():
     """Main entry point for the blog generation system"""
@@ -707,6 +901,7 @@ def main():
             python main.py --topic "Docker containerization best practices"
             python main.py --topic "Machine Learning model deployment" --no-approval
             python main.py --list
+            python main.py --publish "blog_post_20250104_114033_What_is_Context_Window_in_LLMs_models_and_why_should_we_care?.md"
              """
     )
     
@@ -728,6 +923,12 @@ def main():
         help='List all previously generated blog posts'
     )
     
+    parser.add_argument(
+        '--publish', '-p',
+        type=str,
+        help='Publish an existing blog post by filename (use --list to see available posts)'
+    )
+    
     args = parser.parse_args()
     
     # Initialize the blog generation crew
@@ -735,6 +936,10 @@ def main():
     
     if args.list:
         blog_crew.list_generated_posts()
+        return
+    
+    if args.publish:
+        blog_crew.publish_existing_post(args.publish)
         return
     
     if not args.topic:
