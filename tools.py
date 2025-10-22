@@ -6,7 +6,7 @@ import datetime
 from urllib.parse import urlparse
 from typing import Dict, List, Optional, Union
 from bs4 import BeautifulSoup
-from crewai.tools import BaseTool
+from langchain.tools import BaseTool  # CrewAI 0.5.0 uses LangChain's BaseTool
 from config import Config
 
 def generate_ghost_jwt(api_key: str, api_url: str) -> str:
@@ -20,7 +20,7 @@ def generate_ghost_jwt(api_key: str, api_url: str) -> str:
         audience = f"{parsed_url.scheme}://{parsed_url.netloc}"
         
         # Create JWT payload
-        iat = datetime.datetime.utcnow()
+        iat = datetime.datetime.now(datetime.timezone.utc)
         exp = iat + datetime.timedelta(minutes=5)  # Token expires in 5 minutes
         
         payload = {
@@ -34,7 +34,7 @@ def generate_ghost_jwt(api_key: str, api_url: str) -> str:
         return token
     except Exception as e:
         print(f"⚠️ JWT generation error: {e}")
-        return None
+        return ""
 
 class BraveSearchTool(BaseTool):
     name: str = "Brave Search"
@@ -367,10 +367,15 @@ class GhostCMSTool(BaseTool):
     name: str = "Ghost CMS Publisher"
     description: str = "Publish content to Ghost CMS as a draft using the official Ghost client"
     
-    def _run(self, title: str, content: str, meta_description: str = "", tags: List[str] = None) -> str:
+    def _run(self, title: str, content: str, meta_description: str = "", tags: Optional[List[str]] = None) -> str:
         """Publish content to Ghost CMS as draft using direct API calls"""
         try:
             # Generate JWT token for Ghost Admin API
+            if not Config.GHOST_API_KEY or not Config.GHOST_API_URL:
+                return json.dumps({
+                    "status": "error",
+                    "message": "Ghost CMS API key or URL is not configured"
+                })
             jwt_token = generate_ghost_jwt(Config.GHOST_API_KEY, Config.GHOST_API_URL)
             if not jwt_token:
                 return json.dumps({
