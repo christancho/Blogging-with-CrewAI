@@ -447,6 +447,10 @@ class GhostCMSTool(BaseTool):
             print(f"🔑 Using API Key: {Config.GHOST_API_KEY[:10]}...")
             print(f"🔑 Generated JWT Token: {jwt_token[:20]}...")
             print(f"📝 Creating post: {title}")
+            print(f"📄 Content length: {len(content)} characters")
+            print(f"📄 Content preview (first 200 chars): {content[:200]}...")
+            print(f"📋 Tags: {tags}")
+            print(f"📋 Meta description: {meta_description[:100] if meta_description else 'None'}...")
             
             response = requests.post(
                 api_url,
