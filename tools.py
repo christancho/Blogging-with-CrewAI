@@ -186,7 +186,8 @@ class SEOAnalysisTool(BaseTool):
 
             # Get top keyword as target
             if word_freq:
-                target_keyword = max(word_freq, key=word_freq.get)
+                # Use a lambda to avoid typing overload issues with dict.get
+                target_keyword = max(word_freq, key=lambda k: word_freq[k])
             else:
                 target_keyword = "content"
 
@@ -387,6 +388,16 @@ class GhostCMSTool(BaseTool):
     def _run(self, input_data: str) -> str:
         """Publish content to Ghost CMS as draft using direct API calls"""
         try:
+            # DEBUG: Show exactly what the agent is sending
+            print("\n" + "="*80)
+            print("🔍 DEBUG: RAW INPUT_DATA RECEIVED BY GHOST CMS TOOL")
+            print("="*80)
+            print(f"Type: {type(input_data)}")
+            print(f"Length: {len(input_data)} characters")
+            print(f"First 500 chars:\n{input_data[:500]}")
+            print(f"Last 500 chars:\n{input_data[-500:]}")
+            print("="*80 + "\n")
+
             # Parse input JSON
             try:
                 data = json.loads(input_data)
@@ -433,6 +444,18 @@ class GhostCMSTool(BaseTool):
                     "tags": tags or Config.GHOST_CONFIG["default_tags"]
                 }]
             }
+
+            # DEBUG: Show what we're sending to Ghost
+            print("\n" + "="*80)
+            print("📤 DEBUG: DATA BEING SENT TO GHOST CMS API")
+            print("="*80)
+            print(f"Title: {title}")
+            print(f"Content length: {len(content)} chars")
+            print(f"Content first 200 chars: {content[:200]}")
+            print(f"Meta description: {meta_description}")
+            print(f"Tags: {tags}")
+            print(f"Post data structure keys: {post_data['posts'][0].keys()}")
+            print("="*80 + "\n")
             
             headers = {
                 "Authorization": f"Ghost {jwt_token}",
@@ -440,17 +463,14 @@ class GhostCMSTool(BaseTool):
             }
             
             # Make actual API call to Ghost CMS Admin API
-            api_url = f"{Config.GHOST_API_URL}/ghost/api/admin/posts/"
+            # CRITICAL: ?source=html tells Ghost to process the html field as HTML content
+            api_url = f"{Config.GHOST_API_URL}/ghost/api/admin/posts/?source=html"
             
             # Debug information
             print(f"🔗 Ghost CMS API URL: {api_url}")
             print(f"🔑 Using API Key: {Config.GHOST_API_KEY[:10]}...")
             print(f"🔑 Generated JWT Token: {jwt_token[:20]}...")
             print(f"📝 Creating post: {title}")
-            print(f"📄 Content length: {len(content)} characters")
-            print(f"📄 Content preview (first 200 chars): {content[:200]}...")
-            print(f"📋 Tags: {tags}")
-            print(f"📋 Meta description: {meta_description[:100] if meta_description else 'None'}...")
             
             response = requests.post(
                 api_url,
@@ -459,8 +479,14 @@ class GhostCMSTool(BaseTool):
                 timeout=30
             )
             
-            print(f"📡 Ghost CMS Response Status: {response.status_code}")
-            print(f"📡 Ghost CMS Response Text: {response.text[:500]}...")
+            # DEBUG: Show Ghost's full response
+            print("\n" + "="*80)
+            print("📥 DEBUG: GHOST CMS API RESPONSE")
+            print("="*80)
+            print(f"Status Code: {response.status_code}")
+            print(f"Response Headers: {dict(response.headers)}")
+            print(f"Full Response Text:\n{response.text}")
+            print("="*80 + "\n")
             
             if response.status_code == 201:
                 post_response = response.json()
