@@ -26,8 +26,7 @@ from utils import (
     analyze_content_quality,
     show_content_preview,
     RateLimitHandler,
-    ProgressTracker,
-    process_additional_instructions
+    ProgressTracker
 )
 
 class BlogGenerationCrew:
@@ -598,36 +597,6 @@ def main():
         print(f"📄 Your blog post is ready at: {result_path}")
     else:
         print(f"\n❌ Blog generation failed. Please check the error messages above.")
-
-    # Ask for additional job instructions
-    print("\n" + "="*60)
-    print("🤖 ADDITIONAL JOB INSTRUCTIONS")
-    print("="*60)
-    print("The blog generation process has completed. You can now provide additional instructions for:")
-    print("• Modifying the generated content")
-    print("• Publishing additional posts")
-    print("• Updating configuration settings")
-    print("• Running specific tests or validations")
-    print("• Any other tasks related to the blogging system")
-    print("\nType your instructions below (or press Enter to exit):")
-
-    try:
-        additional_instructions = input("\n💬 Additional instructions: ").strip()
-        if additional_instructions:
-            print(f"\n📝 Received instructions: {additional_instructions}")
-            print("🔄 Processing additional instructions...")
-
-            # Process the additional instructions only if we have a valid result path
-            if result_path:
-                process_additional_instructions(additional_instructions, result_path)
-            else:
-                print("⚠️ Cannot process additional instructions - no blog post was generated.")
-        else:
-            print("\n👋 No additional instructions provided. Exiting...")
-    except KeyboardInterrupt:
-        print("\n\n👋 Process interrupted by user. Exiting...")
-    except Exception as e:
-        print(f"\n⚠️ Error processing additional instructions: {str(e)}")
 
 if __name__ == "__main__":
     main()
