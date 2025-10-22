@@ -93,30 +93,67 @@ python main.py
 python main.py --topic "How to start a successful blog"
 ```
 
-## 💡 CRITICAL: Model Configuration
+## 💡 LLM Provider Configuration
 
-**⚠️ You MUST use a model with 128K context. DO NOT use `gpt-4` (8K context)!**
+**The system now supports ANY LLM provider!** Configure your preferred provider (OpenAI, Anthropic Claude, OpenRouter, local models, etc.)
 
-### Correct Model Name:
+### Quick Setup - OpenAI (Default):
 
 ```env
-# Add this to your .env file - CRITICAL!
-OPENAI_MODEL_NAME=gpt-4o-mini
+LLM_API_BASE_URL=https://api.openai.com/v1
+LLM_API_KEY=your-openai-api-key
+LLM_MODEL_NAME=gpt-4o-mini
+LLM_TEMPERATURE=0.7
 ```
 
-### Why gpt-4o-mini?
-- ✅ **128K context** (vs 8K for gpt-4)
-- ✅ **Prevents context errors** - handles full blog workflow
-- ✅ **Fast** processing and response times
-- ✅ **Cheap** - ~$0.10-0.20 per blog post
-- ✅ **High quality** content generation
+### 🌟 Supported Providers
 
-### Common Mistakes:
-- ❌ `gpt-4` - Only 8K context, will cause errors!
-- ❌ `chatgpt-4` - Does not exist
-- ❌ `gpt-5-mini` - Does not exist
+#### OpenAI (Recommended)
+```env
+LLM_API_BASE_URL=https://api.openai.com/v1
+LLM_API_KEY=sk-your-key-here
+LLM_MODEL_NAME=gpt-4o-mini  # 128K context, fast, cheap
+LLM_TEMPERATURE=0.7
+```
 
-**See [MODEL_GUIDE.md](MODEL_GUIDE.md) for complete model reference.**
+#### Anthropic Claude
+```env
+LLM_API_BASE_URL=https://api.anthropic.com/v1
+LLM_API_KEY=sk-ant-your-key-here
+LLM_MODEL_NAME=claude-3-5-sonnet-20241022  # 200K context
+LLM_TEMPERATURE=0.7
+```
+
+#### OpenRouter (Access to Multiple Models)
+```env
+LLM_API_BASE_URL=https://openrouter.ai/api/v1
+LLM_API_KEY=sk-or-your-key-here
+LLM_MODEL_NAME=anthropic/claude-3-5-sonnet  # or openai/gpt-4o-mini
+LLM_TEMPERATURE=0.7
+```
+
+#### Local Models (Ollama)
+```env
+LLM_API_BASE_URL=http://localhost:11434/v1
+LLM_API_KEY=not-needed
+LLM_MODEL_NAME=llama3:70b  # or mixtral:8x7b
+LLM_TEMPERATURE=0.7
+```
+
+### ⚠️ Important Requirements
+
+**Your model MUST have at least 128K context window** to avoid errors. Models with smaller context (like gpt-4 with 8K) will fail.
+
+**Recommended Models:**
+- ✅ `gpt-4o-mini` (OpenAI, 128K, fast, cheap)
+- ✅ `gpt-4o` (OpenAI, 128K, most capable)
+- ✅ `claude-3-5-sonnet-20241022` (Anthropic, 200K)
+- ✅ `llama3:70b` (Local, 128K+ via Ollama)
+
+**Avoid These:**
+- ❌ `gpt-4` - Only 8K context
+- ❌ `gpt-3.5-turbo` - Only 16K context
+- ❌ Small local models with <128K context
 
 ## 📝 How It Works
 
@@ -210,18 +247,42 @@ Blogging-with-CrewAI/
 You can customize the system by editing your `.env` file:
 
 ```env
-# Required
-OPENAI_API_KEY=your-key-here
+# LLM Provider (supports ANY provider!)
+LLM_API_BASE_URL=https://api.openai.com/v1
+LLM_API_KEY=your-key-here
+LLM_MODEL_NAME=gpt-4o-mini
+LLM_TEMPERATURE=0.7
+
+# Search API
 BRAVE_SEARCH_API_KEY=your-key-here
+
+# Ghost CMS (for publishing)
 GHOST_API_KEY=your-key-here
 GHOST_API_URL=https://your-site.com
-
-# Optional
 GHOST_AUTHOR_ID=1
 
-# Model settings (recommended)
+# Legacy OpenAI vars (deprecated, use LLM_* above)
+OPENAI_API_KEY=your-key-here
 OPENAI_MODEL_NAME=gpt-4o-mini
 OPENAI_TEMPERATURE=0.7
+```
+
+### Example Configurations
+
+**Using Anthropic Claude:**
+```env
+LLM_API_BASE_URL=https://api.anthropic.com/v1
+LLM_API_KEY=sk-ant-your-key
+LLM_MODEL_NAME=claude-3-5-sonnet-20241022
+LLM_TEMPERATURE=0.7
+```
+
+**Using Local Ollama:**
+```env
+LLM_API_BASE_URL=http://localhost:11434/v1
+LLM_API_KEY=not-needed
+LLM_MODEL_NAME=llama3:70b
+LLM_TEMPERATURE=0.7
 ```
 
 ## 🚨 Troubleshooting
@@ -301,11 +362,18 @@ When you're done: `deactivate`
 ## 💰 Cost Estimates
 
 **Per blog post (3500 words):**
-- **OpenAI (GPT-4o-mini)**: ~$0.10-0.20
-- **Brave Search**: Free (2000 searches/month)
-- **Ghost CMS**: Free (if you have Ghost)
 
-**Total: ~$0.10-0.20 per blog post** 🎉
+| Provider | Cost per Post | Notes |
+|----------|---------------|-------|
+| **OpenAI (gpt-4o-mini)** | ~$0.10-0.20 | ✅ Recommended |
+| **OpenAI (gpt-4o)** | ~$0.50-1.00 | More capable but pricier |
+| **Anthropic Claude** | ~$0.15-0.30 | Great alternative |
+| **OpenRouter** | Varies | Pay-as-you-go from multiple providers |
+| **Local (Ollama)** | FREE | Requires local GPU/CPU resources |
+| **Brave Search** | FREE | 2000 searches/month included |
+| **Ghost CMS** | FREE | If you have Ghost hosting |
+
+**Most cost-effective setup: Local Ollama + Free Brave Search = $0.00 per post** 🎉
 
 ## 🎯 What You Get
 

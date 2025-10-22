@@ -16,9 +16,19 @@ class BlogTasks:
     
     def content_creation_task(self, topic: str):
         return Task(
-            description=f"""Write complete 3500-word article on "{topic}". Structure: Introduction (400-500 words), Section 1 (600-700 words on foundations), Section 2 (600-700 words on details), Section 3 (600-700 words on advanced concepts), Section 4 (500-600 words on future trends), Conclusion (300-400 words). Write ALL sections in full with examples and smooth transitions.""",
+            description=f"""Write a COMPLETE 3500-word article on "{topic}". CRITICAL: Write FULL PARAGRAPHS for each section, NOT just titles or one-liners.
+
+Structure with FULL CONTENT for each section:
+1. Introduction (400-500 words): Write 4-5 full paragraphs with hook, context, overview, and importance
+2. Section 1 (600-700 words): Write 6-7 full paragraphs on foundational concepts with explanations and examples
+3. Section 2 (600-700 words): Write 6-7 full paragraphs diving deeper with methodologies and practical examples
+4. Section 3 (600-700 words): Write 6-7 full paragraphs on advanced concepts, best practices, and use cases
+5. Section 4 (500-600 words): Write 5-6 full paragraphs on future trends, challenges, and actionable insights
+6. Conclusion (300-400 words): Write 3-4 full paragraphs summarizing takeaways and next steps
+
+CRITICAL: Each section MUST contain multiple detailed paragraphs. DO NOT write just section titles with one sentence. Write the actual article content with full paragraphs, explanations, examples, and details.""",
             agent=self.agents.content_writer_agent(),
-            expected_output="Complete 3500-word article with all sections fully written"
+            expected_output="Complete 3500-word article with ALL sections containing multiple full paragraphs (not just outlines)"
         )
     
     def seo_optimization_task(self, topic: str):
@@ -37,9 +47,11 @@ class BlogTasks:
     
     def quality_review_task(self, topic: str):
         return Task(
-            description=f"""Review article on "{topic}" for accuracy, structure, clarity, SEO effectiveness, and formatting. CRITICAL: Return the FINAL APPROVED CONTENT (complete article), NOT a review report.""",
+            description=f"""Review the article on "{topic}" for accuracy, structure, clarity, SEO, and formatting. After review, return the COMPLETE ARTICLE with all sections and full paragraphs.
+
+CRITICAL: Your output MUST be the entire article content (3500+ words with all sections fully written), NOT a review report or summary. Return the actual blog post content that will be published.""",
             agent=self.agents.quality_reviewer_agent(),
-            expected_output="Final approved article ready for publication"
+            expected_output="Complete article with all sections and full paragraphs (NOT a review report)"
         )
     
     def ghost_publication_task(self, topic: str):

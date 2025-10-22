@@ -4,7 +4,7 @@ import re
 import jwt
 import datetime
 from urllib.parse import urlparse
-from typing import Dict, List, Optional, Union
+from typing import Dict
 from bs4 import BeautifulSoup
 from langchain.tools import BaseTool  # CrewAI 0.5.0 uses LangChain's BaseTool
 from config import Config
@@ -170,11 +170,26 @@ class BraveSearchTool(BaseTool):
 
 class SEOAnalysisTool(BaseTool):
     name: str = "SEO Analysis"
-    description: str = "Analyze and optimize content for SEO including keywords, meta tags, and structure"
-    
-    def _run(self, content: str, target_keyword: str) -> str:
+    description: str = "Analyze and optimize content for SEO including keywords, meta tags, and structure. Input should be the content to analyze."
+
+    def _run(self, content: str) -> str:
         """Analyze content for SEO optimization"""
         try:
+            # Extract potential keywords from content (most common meaningful words)
+            words = content.lower().split()
+            word_freq = {}
+            stop_words = {'the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 'of', 'with', 'by', 'from', 'is', 'are', 'was', 'were', 'be', 'been', 'being', 'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would', 'could', 'should', 'may', 'might', 'can', 'this', 'that', 'these', 'those'}
+
+            for word in words:
+                if len(word) > 4 and word not in stop_words and word.isalpha():
+                    word_freq[word] = word_freq.get(word, 0) + 1
+
+            # Get top keyword as target
+            if word_freq:
+                target_keyword = max(word_freq, key=word_freq.get)
+            else:
+                target_keyword = "content"
+
             # Basic SEO analysis
             word_count = len(content.split())
             keyword_count = content.lower().count(target_keyword.lower())
@@ -203,6 +218,7 @@ class SEOAnalysisTool(BaseTool):
             
             analysis = {
                 "word_count": word_count,
+                "target_keyword": target_keyword,
                 "keyword_density": f"{keyword_density:.2f}%",
                 "keyword_occurrences": keyword_count,
                 "header_structure": {
@@ -295,8 +311,8 @@ class HTMLFormatterTool(BaseTool):
             markdown += self._html_to_markdown(content)
             
             return markdown.strip()
-            
-        except Exception as e:
+
+        except Exception:
             # Fallback: return content as-is with title
             return f"# {title}\n\n{content}"
     
@@ -357,7 +373,7 @@ class HTMLFormatterTool(BaseTool):
             markdown = re.sub(r'\n{3,}', '\n\n', markdown)
             return markdown.strip()
             
-        except Exception as e:
+        except Exception:
             # Fallback: return plain text
             from bs4 import BeautifulSoup
             soup = BeautifulSoup(html_content, 'html.parser')
@@ -365,11 +381,32 @@ class HTMLFormatterTool(BaseTool):
 
 class GhostCMSTool(BaseTool):
     name: str = "Ghost CMS Publisher"
-    description: str = "Publish content to Ghost CMS as a draft using the official Ghost client"
-    
-    def _run(self, title: str, content: str, meta_description: str = "", tags: Optional[List[str]] = None) -> str:
+    description: str = """Publish content to Ghost CMS as a draft. Input should be a JSON string with keys: 'title', 'content', 'meta_description', and optionally 'tags'.
+    Example: {"title": "My Post", "content": "Post content here", "meta_description": "Description", "tags": ["blog", "tech"]}"""
+
+    def _run(self, input_data: str) -> str:
         """Publish content to Ghost CMS as draft using direct API calls"""
         try:
+            # Parse input JSON
+            try:
+                data = json.loads(input_data)
+                title = data.get('title', 'Untitled Post')
+                content = data.get('content', '')
+                meta_description = data.get('meta_description', '')
+                tags = data.get('tags', None)
+            except (json.JSONDecodeError, AttributeError):
+                # If not JSON, treat as plain content and extract title from first line
+                lines = input_data.split('\n', 1)
+                title = lines[0].strip('#').strip() if lines else 'Untitled Post'
+                content = input_data
+                meta_description = ''
+                tags = None
+
+            if not content:
+                return json.dumps({
+                    "status": "error",
+                    "message": "No content provided for publishing"
+                })
             # Generate JWT token for Ghost Admin API
             if not Config.GHOST_API_KEY or not Config.GHOST_API_URL:
                 return json.dumps({

@@ -6,9 +6,22 @@ load_dotenv()
 
 class Config:
     """Configuration settings for the blog generation crew"""
-    
-    # API Keys
+
+    # ============================================================================
+    # LLM Provider Configuration
+    # ============================================================================
+    # New flexible LLM configuration (supports any provider)
+    LLM_API_BASE_URL = os.getenv("LLM_API_BASE_URL", "https://api.openai.com/v1")
+    LLM_API_KEY = os.getenv("LLM_API_KEY") or os.getenv("OPENAI_API_KEY")  # Fallback to OPENAI_API_KEY
+    LLM_MODEL_NAME = os.getenv("LLM_MODEL_NAME") or os.getenv("OPENAI_MODEL_NAME", "gpt-4o-mini")
+    LLM_TEMPERATURE = float(os.getenv("LLM_TEMPERATURE") or os.getenv("OPENAI_TEMPERATURE", "0.7"))
+
+    # Legacy OpenAI configuration (for backward compatibility)
     OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+
+    # ============================================================================
+    # Other API Keys
+    # ============================================================================
     BRAVE_SEARCH_API_KEY = os.getenv("BRAVE_SEARCH_API_KEY")
     GHOST_API_KEY = os.getenv("GHOST_API_KEY")
     GHOST_API_URL = os.getenv("GHOST_API_URL")
@@ -43,19 +56,30 @@ class Config:
     @classmethod
     def validate_config(cls):
         """Validate that required configuration is present"""
-        required_vars = [
-            "OPENAI_API_KEY",
-            "BRAVE_SEARCH_API_KEY",
-            "GHOST_API_KEY",
-            "GHOST_API_URL"
-        ]
-        
-        missing_vars = []
-        for var in required_vars:
-            if not getattr(cls, var):
-                missing_vars.append(var)
-        
-        if missing_vars:
-            raise ValueError(f"Missing required environment variables: {', '.join(missing_vars)}")
-        
+        # Required: LLM API Key (either new LLM_API_KEY or legacy OPENAI_API_KEY)
+        if not cls.LLM_API_KEY:
+            raise ValueError("Missing LLM_API_KEY or OPENAI_API_KEY in environment variables")
+
+        # Required: Brave Search API Key
+        if not cls.BRAVE_SEARCH_API_KEY:
+            raise ValueError("Missing BRAVE_SEARCH_API_KEY in environment variables")
+
+        # Required: Ghost CMS configuration
+        if not cls.GHOST_API_KEY:
+            raise ValueError("Missing GHOST_API_KEY in environment variables")
+        if not cls.GHOST_API_URL:
+            raise ValueError("Missing GHOST_API_URL in environment variables")
+
+        # Validate LLM configuration
+        if not cls.LLM_MODEL_NAME:
+            raise ValueError("Missing LLM_MODEL_NAME or OPENAI_MODEL_NAME in environment variables")
+
+        if not cls.LLM_API_BASE_URL:
+            raise ValueError("Missing LLM_API_BASE_URL in environment variables")
+
+        print(f"✅ LLM Configuration:")
+        print(f"   Provider: {cls.LLM_API_BASE_URL}")
+        print(f"   Model: {cls.LLM_MODEL_NAME}")
+        print(f"   Temperature: {cls.LLM_TEMPERATURE}")
+
         return True
