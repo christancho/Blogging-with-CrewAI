@@ -8,6 +8,7 @@ import os
 import sys
 import argparse
 from datetime import datetime
+from typing import Optional
 from crewai import Crew, Process
 from config import Config
 from agents import BlogAgents
@@ -63,36 +64,53 @@ class BlogGenerationCrew:
             # Execute the entire crew workflow
             print("\n🚀 Executing CrewAI workflow...")
             print("=" * SEPARATOR_LENGTH)
-            
+
             # Use the rate limit handler to execute with retry logic
             result = self.rate_limit_handler.execute_with_retry(crew)
-            
+
             # Extract individual task results from the crew execution
-            # In CrewAI 0.5.0, we get the final result and can access task results
+            # In CrewAI 0.5.0+, task outputs are stored in task.output after execution
             task_results = []
-            
+
             # Try to get individual task results if available
             if hasattr(crew, 'tasks') and crew.tasks:
                 for i, task in enumerate(crew.tasks):
                     step_name = self.progress_tracker.step_names[i] if i < len(self.progress_tracker.step_names) else f"Task {i+1}"
                     print(f"\n✅ Step {i+1}/{len(crew.tasks)} ({step_name}) completed")
-                    
-                    # Try to get task result if available
+
+                    # CrewAI 0.5.0+ stores task output in task.output after execution
                     if hasattr(task, 'output') and task.output:
-                        task_results.append(task.output)
+                        # Task output might be a TaskOutput object or string
+                        if hasattr(task.output, 'raw_output'):
+                            task_results.append(task.output.raw_output)
+                            print(f"   📦 Extracted raw_output from task {i+1}")
+                        elif hasattr(task.output, 'result'):
+                            task_results.append(task.output.result)
+                            print(f"   📦 Extracted result from task {i+1}")
+                        else:
+                            task_results.append(str(task.output))
+                            print(f"   📦 Using string representation of task output {i+1}")
                     else:
-                        # Fallback: use the final result for all tasks
+                        # Fallback: use the final result
+                        print(f"   ⚠️ Task {i+1} output not available, using final result")
                         task_results.append(result)
-            
+
             # If we couldn't get individual results, use the final result
             if not task_results:
+                print("⚠️ No individual task results found, using final result for all tasks")
                 task_results = [result] * len(crew.tasks) if hasattr(crew, 'tasks') else [result]
-            
+
             # Update progress tracker
             self.progress_tracker.current_step = len(crew.tasks)
             percentage = self.progress_tracker.get_progress()
             print(f"\n🎉 All steps completed! ({percentage}%)")
-            
+
+            # Debug: Print task result info
+            print(f"\n🔍 DEBUG: Extracted {len(task_results)} task results")
+            for i, tr in enumerate(task_results):
+                print(f"   Task {i+1} result type: {type(tr)}")
+                print(f"   Task {i+1} result length: {len(str(tr))} chars")
+
             # Return both the final result and all individual task results
             return {
                 'final_result': result,
@@ -102,7 +120,7 @@ class BlogGenerationCrew:
                 'content': task_results[1] if len(task_results) > 1 else None,         # Content task (2nd task, index 1)
                 'ghost_result': task_results[5] if len(task_results) > 5 else None     # Ghost publishing task (6th task, index 5)
             }
-            
+
         except Exception as e:
             print(f"\n❌ Error during crew execution: {str(e)}")
             raise e
@@ -142,7 +160,7 @@ class BlogGenerationCrew:
             "complexity": "intermediate"  # Default complexity
         }
     
-    def generate_blog_post(self, topic: str, user_approval: bool = True) -> str:
+    def generate_blog_post(self, topic: str, user_approval: bool = True) -> Optional[str]:
         """Generate a complete blog post on the given topic"""
         
         print(f"\n🚀 Starting blog generation for topic: '{topic}'")
@@ -220,13 +238,27 @@ class BlogGenerationCrew:
             seo_content = crew_results['seo_content']
             content = crew_results['content']
             ghost_result = crew_results['ghost_result']
-            
-            # Save the final result (for backup/debugging)
+
+            # Determine the best content to save
+            # Priority: markup_content (formatted) > content (written) > final_result (fallback)
+            blog_content_to_save = None
+
+            if markup_content:
+                print("✅ Using Markdown content from formatter task for file output")
+                blog_content_to_save = str(markup_content)
+            elif content:
+                print("⚠️ Using content from writer task for file output (formatter may have failed)")
+                blog_content_to_save = str(content)
+            else:
+                print("⚠️ Using final result for file output (both formatter and writer may have failed)")
+                blog_content_to_save = str(final_result)
+
+            # Save the blog content (actual article, not just a message)
             output_filename = f"blog_post_{timestamp}_{topic.replace(' ', '_').replace('/', '_')}{OUTPUT_FILE_EXTENSION}"
             output_path = os.path.join(self.output_dir, output_filename)
-            
+
             with open(output_path, 'w', encoding='utf-8') as f:
-                f.write(str(final_result))
+                f.write(blog_content_to_save)
             
             print(f"\n🎉 Blog post generation completed! (100%)")
             print(f"📄 Output saved to: {output_path}")
@@ -585,8 +617,11 @@ def main():
             print(f"\n📝 Received instructions: {additional_instructions}")
             print("🔄 Processing additional instructions...")
 
-            # Process the additional instructions
-            process_additional_instructions(additional_instructions, result_path)
+            # Process the additional instructions only if we have a valid result path
+            if result_path:
+                process_additional_instructions(additional_instructions, result_path)
+            else:
+                print("⚠️ Cannot process additional instructions - no blog post was generated.")
         else:
             print("\n👋 No additional instructions provided. Exiting...")
     except KeyboardInterrupt:

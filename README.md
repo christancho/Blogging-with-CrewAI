@@ -13,26 +13,49 @@ This system uses 6 specialized AI agents to automatically research, write, optim
 - **✅ Reviews** quality and accuracy before publication
 - **📝 Publishes** directly to Ghost CMS as drafts (automatic posting!)
 
+## ⚠️ Requirements
+
+**Python 3.10 or higher required** (Python 3.12 recommended)
+
+CrewAI 0.5.0 uses modern type hints (`Type | None`) that require Python 3.10+. If you're using Python 3.9 or earlier, you'll need to upgrade.
+
 ## 🚀 Quick Start
 
-### 1. Setup (5 minutes)
+### 1. Check Your Python Version
+
+```bash
+python3.12 --version  # Should show 3.12.x
+```
+
+**Don't have Python 3.12?** Install it:
+- **macOS (Homebrew):** `brew install python@3.12`
+- **Ubuntu/Debian:** `sudo apt install python3.12 python3.12-venv`
+- **Windows:** Download from [python.org](https://www.python.org/downloads/)
+
+### 2. Setup (5 minutes)
 
 ```bash
 # Clone the repository
 git clone https://git.christianmendieta.ca/christancho/Blogging-with-CrewAI.git
 cd Blogging-with-CrewAI
 
+# Create virtual environment with Python 3.12 (recommended)
+python3.12 -m venv venv
+source venv/bin/activate  # On macOS/Linux
+# OR: venv\Scripts\activate  # On Windows
+
 # Install dependencies
+pip install --upgrade pip
 pip install -r requirements.txt
 
 # Set up your API keys
 cp .env.example .env
 ```
 
-### 2. Get Your API Keys
+### 3. Get Your API Keys
 
 **Required:**
-- **OpenAI API Key**: [Get it here](https://platform.openai.com/) 
+- **OpenAI API Key**: [Get it here](https://platform.openai.com/)
 - **Brave Search API Key**: [Get it here](https://api.search.brave.com/) (2000 free searches/month)
 - **Ghost CMS API Key**: Create in your Ghost admin panel
 - **Ghost CMS URL**: Your Ghost site URL (e.g., https://your-site.com)
@@ -48,7 +71,7 @@ cp .env.example .env
 
 **⚠️ Important**: You need the **Admin API Key**, not the Content API Key, to create posts!
 
-### 3. Configure Your Keys
+### 4. Configure Your Keys
 
 Edit your `.env` file:
 
@@ -60,7 +83,7 @@ GHOST_API_KEY=your-ghost-api-key-here
 GHOST_API_URL=https://your-ghost-site.com
 ```
 
-### 4. Generate Your First Blog Post
+### 5. Generate Your First Blog Post
 
 ```bash
 # Interactive mode (recommended for first time)
@@ -70,20 +93,30 @@ python main.py
 python main.py --topic "How to start a successful blog"
 ```
 
-## 💡 Important: TPM Limits & Model Recommendation
+## 💡 CRITICAL: Model Configuration
 
-**⚠️ For optimal performance, we recommend using GPT-4o-mini instead of GPT-4:**
+**⚠️ You MUST use a model with 128K context. DO NOT use `gpt-4` (8K context)!**
+
+### Correct Model Name:
 
 ```env
-# Add this to your .env file for better performance
+# Add this to your .env file - CRITICAL!
 OPENAI_MODEL_NAME=gpt-4o-mini
 ```
 
-**Why GPT-4o-mini?**
-- ✅ Faster processing and response times
-- ✅ Lower cost per token
-- ✅ Still produces excellent quality content
-- ✅ Better performance for long-form content generation
+### Why gpt-4o-mini?
+- ✅ **128K context** (vs 8K for gpt-4)
+- ✅ **Prevents context errors** - handles full blog workflow
+- ✅ **Fast** processing and response times
+- ✅ **Cheap** - ~$0.10-0.20 per blog post
+- ✅ **High quality** content generation
+
+### Common Mistakes:
+- ❌ `gpt-4` - Only 8K context, will cause errors!
+- ❌ `chatgpt-4` - Does not exist
+- ❌ `gpt-5-mini` - Does not exist
+
+**See [MODEL_GUIDE.md](MODEL_GUIDE.md) for complete model reference.**
 
 ## 📝 How It Works
 
@@ -199,6 +232,20 @@ OPENAI_TEMPERATURE=0.7
 - Make sure your `.env` file exists and has valid API keys
 - Check that all required keys are set: `OPENAI_API_KEY`, `BRAVE_SEARCH_API_KEY`, `GHOST_API_KEY`, `GHOST_API_URL`
 
+**`TypeError: unsupported operand type(s) for |`**
+- **Cause:** You're using Python 3.9 or earlier
+- **Solution:** Use Python 3.10 or higher (preferably 3.12)
+```bash
+# Check your Python version
+python --version
+
+# If it's < 3.10, recreate venv with Python 3.12
+rm -rf venv
+python3.12 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+```
+
 **"Rate limit exceeded"**
 - The system now has a very high TPM limit (200,000) to reduce rate limiting
 - Switch to `gpt-4o-mini` model for even better performance
@@ -208,6 +255,10 @@ OPENAI_TEMPERATURE=0.7
 **"Search failed with status code: 401"**
 - Verify your Brave Search API key is correct
 - Check if you've exceeded your 2000 free searches/month
+
+**`cannot import name 'BaseTool' from 'crewai.tools'`**
+- **Cause:** Import issue (already fixed in latest version)
+- **Solution:** Make sure you have the latest code with imports from `langchain.tools`
 
 **"Ghost CMS authentication failed"**
 - Make sure you're using the **Admin API Key**, not the Content API Key
@@ -223,6 +274,22 @@ OPENAI_TEMPERATURE=0.7
 - Check your OpenAI API key and billing status
 - Ensure you have sufficient API credits
 - Try with a simpler topic first
+
+**Warning: `Mixing V1 models and V2 models`**
+- This is safe to ignore - it's a pydantic compatibility warning from CrewAI 0.5.0 and won't affect functionality
+
+### Virtual Environment Activation
+
+Every time you work on the project, remember to activate the virtual environment:
+
+```bash
+cd "/path/to/Blogging-with-CrewAI"
+source venv/bin/activate  # macOS/Linux
+# OR
+venv\Scripts\activate     # Windows
+```
+
+When you're done: `deactivate`
 
 ### Getting Help
 
