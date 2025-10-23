@@ -36,24 +36,37 @@ Structure with FULL CONTENT for each section:
 
 CRITICAL: Each section MUST contain multiple detailed paragraphs. DO NOT write just section titles with one sentence. Write the actual article content with full paragraphs, explanations, examples, and details.
 
-INLINE HYPERLINKS (CRITICAL):
-- Add hyperlinks DIRECTLY IN THE TEXT where you mention concepts, tools, frameworks, or technologies
-- Examples of inline links:
-  * "According to [OpenAI's documentation](https://platform.openai.com/docs), the API..."
-  * "Tools like [Docker](https://docker.com) and [Kubernetes](https://kubernetes.io) enable..."
-  * "Research from [MIT](https://mit.edu/research) shows that..."
-  * "The [Python programming language](https://python.org) offers..."
-- Link official documentation, GitHub repos, research papers, tools, frameworks
-- Aim for 10-15 inline hyperlinks throughout the article text
-- Format ALL links as Markdown: [link text](https://url.com)
+MANDATORY INLINE HYPERLINKS - YOU MUST INCLUDE THESE:
+YOU MUST add 10-15 inline hyperlinks DIRECTLY WITHIN the article text. This is NOT optional.
+
+RULES FOR INLINE HYPERLINKS:
+1. USE the actual URLs from the research task's findings - review the research output and extract the URLs
+2. Add links NATURALLY in sentences where you mention tools, concepts, frameworks, companies, or research
+3. DO NOT save all links for the References section - they MUST appear inline in the text
+4. Every major concept, tool, or framework mentioned should link to its official site or documentation
+
+EXAMPLES OF INLINE HYPERLINKS (you must add similar links in your article):
+- "According to [OpenAI's documentation](https://platform.openai.com/docs), the API..."
+- "Tools like [Docker](https://docker.com) and [Kubernetes](https://kubernetes.io) enable..."
+- "Research from [MIT](https://mit.edu/research) shows that..."
+- "The [Python programming language](https://python.org) offers..."
+
+WHERE TO ADD INLINE LINKS:
+- Introduction: 2-3 links to key concepts or background sources
+- Body sections: 2-3 links per section to relevant tools, documentation, or research
+- Throughout the text when mentioning specific technologies, frameworks, or studies
+
+FORMAT: All inline links must use Markdown format: [link text](https://url.com)
 
 REFERENCES SECTION:
 - Add a "## References" section at the very end
 - List all sources cited in the article
 - Format: numbered list with titles and URLs
-- Include 5-10 credible sources""",
+- Include 5-10 credible sources
+
+VERIFICATION: Before finishing, count your inline hyperlinks. You must have at least 10 links embedded in the article text.""",
             agent=self.agents.content_writer_agent(),
-            expected_output="Complete 3500-word article with ALL sections containing multiple full paragraphs, including hyperlinks to sources and a References section"
+            expected_output="Complete 3500-word article with ALL sections containing multiple full paragraphs, AT LEAST 10 inline hyperlinks throughout the text, and a References section"
         )
     
     def seo_optimization_task(self, topic: str):
@@ -74,9 +87,22 @@ REFERENCES SECTION:
         return Task(
             description=f"""Review the article on "{topic}" for accuracy, structure, clarity, SEO, and formatting. After review, return the COMPLETE ARTICLE with all sections and full paragraphs.
 
-CRITICAL: Your output MUST be the entire article content (3500+ words with all sections fully written), NOT a review report or summary. Return the actual blog post content that will be published.""",
+MANDATORY QUALITY CHECKS:
+1. Verify that the article contains AT LEAST 10 inline hyperlinks in the text (not just in References section)
+2. If inline hyperlinks are missing, ADD THEM NOW - use the research URLs or find appropriate official documentation/sources
+3. Ensure hyperlinks are distributed throughout the article (introduction, body sections, conclusion)
+4. Verify all links use proper Markdown format: [link text](https://url.com)
+5. Check that links are relevant and add value (link to official docs, research, authoritative sources)
+
+INLINE HYPERLINK EXAMPLES YOU SHOULD ADD IF MISSING:
+- Link technology names to their official websites
+- Link research findings to original sources
+- Link tools/frameworks to their documentation
+- Link companies/organizations to their main sites
+
+CRITICAL: Your output MUST be the entire article content (3500+ words with all sections fully written), NOT a review report or summary. Return the actual blog post content that will be published with all inline hyperlinks included.""",
             agent=self.agents.quality_reviewer_agent(),
-            expected_output="Complete article with all sections and full paragraphs (NOT a review report)"
+            expected_output="Complete article with all sections, full paragraphs, and AT LEAST 10 inline hyperlinks throughout the text (NOT a review report)"
         )
     
     def ghost_publication_task(self, topic: str):
