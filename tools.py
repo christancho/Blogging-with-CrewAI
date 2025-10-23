@@ -3,6 +3,7 @@ import json
 import re
 import jwt
 import datetime
+import markdown
 from urllib.parse import urlparse
 from typing import Dict
 from bs4 import BeautifulSoup
@@ -431,12 +432,18 @@ class GhostCMSTool(BaseTool):
                     "message": "Failed to generate JWT token for Ghost CMS authentication"
                 })
             
+            # Convert Markdown to HTML for Ghost CMS
+            # Since we use ?source=html, Ghost expects HTML content, not Markdown
+            html_content = markdown.markdown(
+                content,
+                extensions=['extra', 'codehilite', 'toc', 'nl2br']
+            )
+
             # Prepare the post data following official Ghost CMS API format
-            # Ghost CMS supports both HTML and Markdown content
             post_data = {
                 "posts": [{
                     "title": title,
-                    "html": content,  # Ghost will auto-detect if it's Markdown or HTML
+                    "html": html_content,  # Converted from Markdown to HTML
                     "status": "draft",
                     "excerpt": meta_description,
                     "meta_title": title,
@@ -450,11 +457,11 @@ class GhostCMSTool(BaseTool):
             print("📤 DEBUG: DATA BEING SENT TO GHOST CMS API")
             print("="*80)
             print(f"Title: {title}")
-            print(f"Content length: {len(content)} chars")
-            print(f"Content first 200 chars: {content[:200]}")
+            print(f"Original Markdown length: {len(content)} chars")
+            print(f"Converted HTML length: {len(html_content)} chars")
+            print(f"HTML first 300 chars: {html_content[:300]}")
             print(f"Meta description: {meta_description}")
             print(f"Tags: {tags}")
-            print(f"Post data structure keys: {post_data['posts'][0].keys()}")
             print("="*80 + "\n")
             
             headers = {

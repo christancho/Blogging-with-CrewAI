@@ -114,7 +114,7 @@ class BlogGenerationCrew:
             return {
                 'final_result': result,
                 'task_results': task_results,
-                'markup_content': task_results[3] if len(task_results) > 3 else None,  # Markdown formatter task (4th task, index 3)
+                'markup_content': task_results[4] if len(task_results) > 4 else None,  # Quality review task (5th task, index 4) - COMPLETE article
                 'seo_content': task_results[2] if len(task_results) > 2 else None,     # SEO task (3rd task, index 2)
                 'content': task_results[1] if len(task_results) > 1 else None,         # Content task (2nd task, index 1)
                 'ghost_result': task_results[5] if len(task_results) > 5 else None     # Ghost publishing task (6th task, index 5)
@@ -239,17 +239,17 @@ class BlogGenerationCrew:
             ghost_result = crew_results['ghost_result']
 
             # Determine the best content to save
-            # Priority: markup_content (formatted) > content (written) > final_result (fallback)
+            # Priority: markup_content (reviewed & complete) > content (written) > final_result (fallback)
             blog_content_to_save = None
 
             if markup_content:
-                print("✅ Using Markdown content from formatter task for file output")
+                print("✅ Using reviewed content from quality review task for file output")
                 blog_content_to_save = str(markup_content)
             elif content:
-                print("⚠️ Using content from writer task for file output (formatter may have failed)")
+                print("⚠️ Using content from writer task for file output (review may have failed)")
                 blog_content_to_save = str(content)
             else:
-                print("⚠️ Using final result for file output (both formatter and writer may have failed)")
+                print("⚠️ Using final result for file output (both review and writer may have failed)")
                 blog_content_to_save = str(final_result)
 
             # Save the blog content (actual article, not just a message)
@@ -273,10 +273,10 @@ class BlogGenerationCrew:
             
             # Extract metadata and prepare content for preview
             if markup_content:
-                print("✅ Using Markdown content from Markdown formatter task")
+                print("✅ Using reviewed content from quality review task")
                 blog_content = str(markup_content)
             else:
-                print("⚠️ No Markdown content from formatter, falling back to content task")
+                print("⚠️ No reviewed content, falling back to content task")
                 blog_content = str(content) if content else str(final_result)
             
             # Extract metadata using helper function

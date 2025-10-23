@@ -11,5 +11,8 @@ lxml>=5.0.0
 # JWT for Ghost CMS authentication
 PyJWT>=2.8.0
 
+# Markdown to HTML conversion for Ghost CMS
+markdown>=3.5.0
+
 # Let CrewAI install its own dependencies
 # This ensures compatibility
