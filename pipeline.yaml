@@ -1,0 +1,128 @@
+# pipeline.yaml — Hybrid SEO Pipeline Configuration
+# Pattern from MissMathWizz/Multi-Agent-Blog-Generator, extended for semantic SEO.
+# Non-developers can tune all parameters here without touching Python.
+# Use --profile=<name> when running to load a site-specific profile.
+
+# ===== CONTENT SETTINGS =====
+content:
+  word_count_target: 3500          # Target article length
+  inline_hyperlinks_min: 10        # Minimum inline links in article body
+  semantic_entities_min: 5         # Minimum named entities (people, places, orgs)
+  sections: 4                      # Number of main body sections
+  include_intro: true
+  include_conclusion: true
+
+# ===== RESEARCH SETTINGS =====
+research:
+  # 4-category research system (from MathWizz)
+  # Maps focus_areas[i] → searches_per_area[i]
+  focus_areas:
+    - "current_landscape"          # Overview, state-of-the-art
+    - "competitor_gaps"            # What competitors miss
+    - "data_statistics"            # Numbers, studies, surveys
+    - "expert_sources"             # Authority quotes and citations
+  searches_per_area: [3, 3, 2, 2] # Searches per focus area
+  max_sources: 15
+  freshness: "py"                  # "py" = past year
+
+# ===== STRATEGY SETTINGS (MathWizz-inspired, runs first) =====
+strategy:
+  analysis_depth: "comprehensive"  # Options: basic, detailed, comprehensive
+  content_angle_generation: 3      # Unique content angles to identify
+  competitive_focus: true          # Analyze competitor positioning
+  market_gap_identification: true  # Find content gaps to exploit
+
+# ===== SEO SETTINGS (runs before research, not after) =====
+seo:
+  primary_keywords: 3
+  secondary_keywords: 8
+  lsi_keywords: 5                  # Latent semantic indexing terms
+  keyword_density_target: 1.5      # Percent (1.5%)
+  meta_description_length: 160
+  title_length_max: 60
+  h2_sections: 4
+  hub_spoke_structure: true        # Cluster keywords around a hub topic
+
+# ===== INTERNAL LINKING (our addition) =====
+internal_links:
+  max_suggestions: 5
+  placeholder_syntax: "[[LINK: {anchor} → {url}]]"
+  targets: []                      # Populated per profile below
+
+# ===== PUBLISHING =====
+publishing:
+  target_cms: "ghost"
+  publish_status: "draft"
+  include_canonical_url: false
+  include_og_image: false
+
+# ===== RATE LIMITING =====
+rate_limiting:
+  llm_delay_seconds: 2
+  search_delay_seconds: 1
+  max_retries: 3
+  backoff_multiplier: 2            # Exponential backoff factor
+
+# ===== MONITORING =====
+monitoring:
+  verbose_progress: true
+  show_research_summary: true
+  log_api_calls: false
+
+# ===== OUTPUT =====
+output:
+  format: "markdown"
+  include_metadata: true
+  save_research_data: false        # Set true to save research brief alongside article
+  timestamp: true
+
+# ============================================================
+# SITE PROFILES — override defaults per site
+# ============================================================
+profiles:
+
+  cursedtours:
+    research:
+      focus_areas:
+        - "ghost_tours"
+        - "dark_tourism_destinations"
+        - "haunted_history"
+        - "local_legend_sources"
+    seo:
+      lsi_keywords: 8
+    internal_links:
+      targets:
+        - {anchor: "ghost tours", url: "/ghost-tours"}
+        - {anchor: "dark tourism", url: "/dark-tourism"}
+        - {anchor: "haunted locations", url: "/haunted-locations"}
+        - {anchor: "ghost tour guide", url: "/ghost-tour-guide"}
+
+  diggingscriptures:
+    research:
+      focus_areas:
+        - "biblical_archaeology"
+        - "ancient_near_east"
+        - "manuscript_evidence"
+        - "recent_excavations"
+    seo:
+      lsi_keywords: 6
+    internal_links:
+      targets:
+        - {anchor: "biblical archaeology", url: "/biblical-archaeology"}
+        - {anchor: "ancient Israel", url: "/ancient-israel"}
+        - {anchor: "Dead Sea Scrolls", url: "/dead-sea-scrolls"}
+
+  devour_destinations:
+    research:
+      focus_areas:
+        - "experiential_dining"
+        - "food_tourism_trends"
+        - "culinary_destinations"
+        - "restaurant_awards"
+    seo:
+      lsi_keywords: 5
+    internal_links:
+      targets:
+        - {anchor: "food experiences", url: "/food-experiences"}
+        - {anchor: "culinary travel", url: "/culinary-travel"}
+        - {anchor: "restaurant guide", url: "/restaurant-guide"}

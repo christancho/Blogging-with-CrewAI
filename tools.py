@@ -4,11 +4,49 @@ import re
 import jwt
 import datetime
 import markdown
+from typing import Any, Dict, Optional
 from urllib.parse import urlparse
-from typing import Dict
 from bs4 import BeautifulSoup
 from langchain.tools import BaseTool  # CrewAI 0.5.0 uses LangChain's BaseTool
 from config import Config
+
+
+# ============================================================================
+# Output Sanitization — Nimish (Nimish-0070/AI-CONTENT-GENERATOR-AGENT) pattern
+# Strips raw API error traces before they propagate downstream or reach the UI.
+# ============================================================================
+
+_ERROR_SIGNALS = (
+    "rate_limit", "rate limit", "429", "503", "service_unavailable",
+    "overloaded", "overload", "resource_exhausted", "llm_unavailable",
+    "[anthropic error]", "[gemini error]", "api error", "connection error",
+)
+
+
+def sanitize_output(text: Any, fallback: str = "") -> str:
+    """
+    Sanitize an LLM or tool output before passing it downstream.
+
+    - Converts non-string values to str
+    - Replaces raw API error traces with an empty string (or a custom fallback)
+    - Normalises excessive whitespace
+
+    Use this whenever an agent output is about to be passed as input to the
+    next pipeline stage, so error traces never corrupt downstream prompts.
+    """
+    if not isinstance(text, str):
+        try:
+            text = str(text)
+        except Exception:
+            return fallback
+
+    low = text.lower()
+    if any(signal in low for signal in _ERROR_SIGNALS):
+        return fallback
+
+    # Collapse 3+ consecutive blank lines to 2
+    text = re.sub(r"\n{3,}", "\n\n", text)
+    return text.strip()
 
 def generate_ghost_jwt(api_key: str, api_url: str) -> str:
     """Generate JWT token for Ghost Admin API"""

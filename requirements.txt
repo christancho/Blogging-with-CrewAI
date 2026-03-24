@@ -1,8 +1,8 @@
-# CrewAI and AI Framework
+# CrewAI — kept for backward compatibility with crewai pipeline path
 # CrewAI 0.5.0 requires pydantic v2
 crewai==0.5.0
 
-# Core Dependencies
+# Core runtime dependencies
 python-dotenv>=1.0.0
 requests>=2.31.0
 beautifulsoup4>=4.12.0
@@ -14,5 +14,14 @@ PyJWT>=2.8.0
 # Markdown to HTML conversion for Ghost CMS
 markdown>=3.5.0
 
-# Let CrewAI install its own dependencies
-# This ensures compatibility
+# Anthropic SDK — used by llm.py manual fallback chain
+anthropic>=0.43.0
+
+# YAML config loading (pipeline.yaml)
+pyyaml>=6.0
+
+# LangChain OpenAI — used by agents.py (CrewAI path)
+langchain-openai>=0.1.0
+
+# Testing
+pytest>=7.4.0

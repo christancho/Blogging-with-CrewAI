@@ -14,7 +14,8 @@ RATE_LIMIT_WAIT_TIME = 60  # seconds
 MAX_TPM_LIMIT = 200000
 
 # Progress Tracking Constants
-TOTAL_WORKFLOW_STEPS = 5
+# 8 stages: Strategy → SEO → Research → Write → Review → Format → InternalLink → Publish
+TOTAL_WORKFLOW_STEPS = 8
 PROGRESS_DELAY = 1  # seconds between steps
 
 # File Constants
